@@ -1,0 +1,5 @@
+# ignore vscode files
+.vscode
+
+# data files
+data/*
