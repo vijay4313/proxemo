@@ -30,7 +30,7 @@ def readDataSingleGait(_path, _ftype, coords, joints, cycles=3, dataSetNumber = 
     return pts, label
 
 
-def generateDataSet(_path, _ftype, coords, joints, cycles=3, angles = 0):
+def generateDataSet(_path, _ftype, _dpath,coords, joints, cycles=3, angles = 0):
     file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
     ff = h5py.File(file_feature, 'r')
     file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
@@ -43,8 +43,8 @@ def generateDataSet(_path, _ftype, coords, joints, cycles=3, angles = 0):
 #                total = len(ff.keys()),
 #                desc = "DataSet")
             
-        ffNew = h5py.File(os.path.join(_path + "/AugDataset", 'features' + _ftype + '_' + str(angle) +'.h5'), 'w')
-        flNew = h5py.File(os.path.join(_path + "/AugDataset", 'labels'   + _ftype + '_' + str(angle) +'.h5'), 'w')
+        ffNew = h5py.File(os.path.join(_dpath, 'features' + _ftype + '_' + str(angle) +'.h5'), 'w')
+        flNew = h5py.File(os.path.join(_dpath, 'labels'   + _ftype + '_' + str(angle) +'.h5'), 'w')
         
 #        for ffKey, flKey in pbarDataSet:
         for ffKey, flKey in zip(ff.keys(), fl.keys()):
@@ -58,7 +58,7 @@ def generateDataSet(_path, _ftype, coords, joints, cycles=3, angles = 0):
 if __name__ == "__main__":
 #    pts, label = readDataSingleGait("../data", "", 3, 16, 1)
     angles = range(0,360,5)
-    generateDataSet("../data", "", 3, 16, 1, angles)
+    generateDataSet("../data", "", "../data/AugDataset", 3, 16, 1, angles)
     
 
 
