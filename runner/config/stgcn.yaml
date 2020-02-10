@@ -1,4 +1,4 @@
-MODE: 'train' # train/test
+MODE: 'train' # train/test/save_fearures
 OUTPUT_PATH:
 EPOCHS: 500
 START_EPOCH: 0
@@ -6,6 +6,9 @@ LOG_INTERVAL: 1
 CUDA_DEVICE: None 
 BATCH_SIZE: 32
 SNAPSHOT_INTERVAL: 5
+CUDA_DEVICE: 'cuda0'
+SAVE_FEATURES: True
+SAVE_FILE: '../data/deepfeatures.h5'
 
 # Model parameters
 MODEL:
@@ -22,4 +25,5 @@ DATA:
   COORDS: 3
   JOINTS: 16
   CYCLES: 1
-  DATA_PATH: '/data/*.h5'
+  FEATURES_FILE: '../data/features.h5'
+  LABELS_FILE: '../data/lables.h5'

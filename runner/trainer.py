@@ -1,5 +1,6 @@
 import math
 import os
+import h5py
 
 import numpy as np
 import torch
@@ -15,6 +16,39 @@ MODEL_TYPE = {
     'vscnn': None
 }
 
+LOSS = {
+        'cross_entropy': nn.CrossEntropyLoss
+        }
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv1d') != -1:
+        m.weight.data.normal_(0.0, 0.02)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+    elif classname.find('Conv2d') != -1:
+        m.weight.data.normal_(0.0, 0.02)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
+        m.bias.data.fill_(0)
+
+def find_all_substr(a_str, sub):
+    start = 0
+    while True:
+        start = a_str.find(sub, start)
+        if start == -1: return
+        yield start
+        start += len(sub)  # use start += 1 to find overlapping matches
+
+def get_best_epoch_and_accuracy(path_to_model_files):
+    all_models = os.listdir(path_to_model_files)
+    while '_' not in all_models[-1]:
+        all_models = all_models[:-1]
+    best_model = all_models[-1]
+    all_us = list(find_all_substr(best_model, '_'))
+    return int(best_model[5:all_us[0]]), float(best_model[all_us[0]+4:all_us[1]])
 
 class Trainer(object):
     """
@@ -40,10 +74,14 @@ class Trainer(object):
 
     def build_model(self):
         # model
-        self.model = Classifier(self.args['COORDS'], self.num_classes, self.graph_dict)
+        self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](
+                               self.args['COORDS'],
+                               self.num_classes,
+                               self.graph_dict)
+#        self.model = Classifier(self.args['COORDS'], self.num_classes, self.graph_dict)
         self.model.cuda(self.cuda)
         self.model.apply(weights_init)
-        self.loss = nn.CrossEntropyLoss()
+        self.loss = LOSS[self.args['MODEL']['LOSS']]()
 
         # optimizer
         optimizer_args = self.args['MODEL']['OPTIMIZER']
@@ -223,7 +261,7 @@ class Trainer(object):
                     self.result))
             self.io.save_pkl(result_dict, 'test_result.pkl')
 
-    def save_best_feature(self, ftype, data, joints, coords):
+    def save_best_feature(self, _features_file, _save_file, data, joints, coords):
         if self.best_epoch is None:
             self.best_epoch, best_accuracy = get_best_epoch_and_accuracy(
                 self.args.work_dir)
@@ -233,9 +271,9 @@ class Trainer(object):
                                 'epoch{}_acc{:.2f}_model.pth.tar'.format(self.best_epoch, best_accuracy))
         self.model.load_state_dict(torch.load(filename))
         features = np.empty((0, 256))
-        fCombined = h5py.File('../data/features'+ftype+'.h5', 'r')
+        fCombined = h5py.File(_features_file, 'r')
         fkeys = fCombined.keys()
-        dfCombined = h5py.File('../data/deepFeatures'+ftype+'.h5', 'w')
+        dfCombined = h5py.File(_save_file, 'w')
         for i, (each_data, each_key) in enumerate(zip(data, fkeys)):
 
             # get data
