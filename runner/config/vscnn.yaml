@@ -1,9 +1,9 @@
-MODE: 'train' # train/test
-DATA_PATH: '/data/*.h5'
+MODE: 'train' # train/test/save_features
 OUTPUT_PATH:
 EPOCHS: 500
 LOG_INTERVAL: 1
-CUDA_DEVICE: '' 
+CUDA_DEVICE: ''
+NUM_WORKERS: 8
 BATCH_SIZE: 32
 SNAPSHOT_INTERVAL: 5
 
@@ -16,3 +16,10 @@ MODEL:
     LR: 0.1
   LOSS: 'cross_entropy'
   SNAPSHOT_PATH: ''
+
+# Data params
+DATA:
+  COORDS: 3
+  JOINTS: 16
+  CYCLES: 1
+  DATA_PATH: '/data/*.h5'

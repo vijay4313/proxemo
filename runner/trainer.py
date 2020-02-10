@@ -1,14 +1,19 @@
 import math
 import os
 
-import h5py
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchlight
+from torch.utils.tensorboard import SummaryWriter
 
-from net import classifier
+from zoo.classifier_stgcn.classifier import Classifier
+
+MODEL_TYPE = {
+    'stgcn': Classifier,
+    'vscnn': None
+}
 
 
 class Trainer(object):
@@ -16,7 +21,7 @@ class Trainer(object):
         Processor for gait generation
     """
 
-    def __init__(self, args, data_loader, C, num_classes, graph_dict, device='cuda:0'):
+    def __init__(self, args, data_loader, num_classes, graph_dict):
 
         self.args = args
         self.data_loader = data_loader
@@ -25,40 +30,36 @@ class Trainer(object):
         self.iter_info = dict()
         self.epoch_info = dict()
         self.meta_info = dict(epoch=0, iter=0)
-        self.device = device
-        self.io = torchlight.IO(
-            self.args.work_dir,
-            save_log=self.args.save_log,
-            print_log=self.args.print_log)
-
-        # model
-        self.model = classifier.Classifier(C, num_classes, graph_dict)
-        self.model.cuda('cuda:0')
-        self.model.apply(weights_init)
-        self.loss = nn.CrossEntropyLoss()
         self.best_loss = math.inf
-        self.step_epochs = [
-            math.ceil(float(self.args.num_epoch * x)) for x in self.args.step]
         self.best_epoch = None
         self.best_accuracy = np.zeros((1, np.max(self.args.topk)))
         self.accuracy_updated = False
+        log_dir = os.path.join(args['OUTPUT_PATH'], 'logs')
+        self.logger = SummaryWriter(log_dir=log_dir)
+        self.cuda = args['CUDA_DEVICE'] if args['CUDA_DEVICE'] is not None else 0
+
+    def build_model(self):
+        # model
+        self.model = Classifier(self.args['COORDS'], self.num_classes, self.graph_dict)
+        self.model.cuda(self.cuda)
+        self.model.apply(weights_init)
+        self.loss = nn.CrossEntropyLoss()
 
         # optimizer
-        if self.args.optimizer == 'SGD':
+        optimizer_args = self.args['MODEL']['OPTIMIZER']
+        if optimizer_args['TYPE'] == 'sgd':
             self.optimizer = optim.SGD(
                 self.model.parameters(),
-                lr=self.args.base_lr,
-                momentum=0.9,
-                nesterov=self.args.nesterov,
-                weight_decay=self.args.weight_decay)
-        elif self.args.optimizer == 'Adam':
+                lr=optimizer_args['LR'],
+                weight_decay=optimizer_args['WEIGHT_DECAY'])
+        elif optimizer_args['TYPE'] == 'adam':
             self.optimizer = optim.Adam(
                 self.model.parameters(),
-                lr=self.args.base_lr,
-                weight_decay=self.args.weight_decay)
+                lr=optimizer_args['LR'],
+                weight_decay=optimizer_args['WEIGHT_DECAY'])
         else:
-            raise ValueError()
-        self.lr = self.args.base_lr
+            raise ValueError('Unkown optimizer %s', optimizer_args['TYPE'])
+        self.lr = optimizer_args['LR']
 
     def adjust_lr(self):
 
