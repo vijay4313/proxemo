@@ -111,13 +111,11 @@ def plotSkeleton3D_dataloader(data_features, label_features, fn = 0):
         plt.pause(0.1)
 
 if __name__ == "__main__":
-    pts,label = readDataSingleGait("../data/AugDataset", "_180", 3, 16, 1)
+    pts,label = readDataSingleGait("../data", "", 3, 16, 1)
     plotSkeleton3D(pts,label,0)
-# =============================================================================
-#     for idx, param in enumerate([(pts, 90, [0, 0, 0], 3),
-#                                  (pts, 0, [0, 0, 0], 1),
-#                                  (pts, 0, [0, 0, 0], 1)]):
-#         pts1 = augment3D(*param)
-#         print(abs(pts1[0][0]-pts1[0][1]))
-#         plotSkeleton3D(pts1,label,idx)
-# =============================================================================
+    for idx, param in enumerate([(pts, 0, 1, 1),
+                                 (pts, 90, 1, 1),
+                                 (pts, 180, 1, 1)]):
+        pts1 = augment3D(*param)
+        print(abs(pts1[0][0]-pts1[0][1]))
+        plotSkeleton3D(pts1,label,idx)

@@ -18,7 +18,8 @@ theta should be given in degrees
 def augment3D(data_features, theta, trans, scale):
     theta = theta*np.pi/180
     rotMat = np.array([[np.cos(theta), 0, -np.sin(theta)], [0, 1, 0], [np.sin(theta), 0, np.cos(theta)]])
-    trans = np.array([trans])
+    xyTrans = [np.cos(theta), np.sin(theta), 0]
+    xyTrans = np.array(xyTrans)
     K = np.array([[scale,0,0, 0],[0,scale,0, 0],[0,0,1, 0],[0,0,0,1]])
     H = np.ones((4,4))
     H[0:3, 0:3] = rotMat
