@@ -2,20 +2,19 @@
 import os
 import h5py
 import numpy as np
-import tensorflow as tf
 
 # torch
-import torch
 from sklearn.model_selection import train_test_split
-from torchvision import datasets, transforms
+import torch
 
 
-def load_data(_path, _ftype, coords, joints, cycles=3):
 
-    file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
-    ff = h5py.File(file_feature, 'r')
-    file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
-    fl = h5py.File(file_label, 'r')
+def load_data(_path_features, _path_lables, coords, joints, cycles=3):
+
+    # file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
+    # file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
+    ff = h5py.File(_path_features, 'r')
+    fl = h5py.File(_path_lables, 'r')
 
     data_list = []
     num_samples = len(ff.keys())

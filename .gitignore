@@ -3,3 +3,6 @@
 
 # data files
 data/*
+
+# logs
+logs/*

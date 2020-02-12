@@ -1,24 +1,25 @@
-MODE: 'train' # train/test/save_features
+MODE: 'train' # train/test
 OUTPUT_PATH:
 EPOCHS: 500
+START_EPOCH: 0
 LOG_INTERVAL: 1
-CUDA_DEVICE: ''
-NUM_WORKERS: 8
+CUDA_DEVICE: None 
 BATCH_SIZE: 32
 SNAPSHOT_INTERVAL: 5
 
 # Model parameters
-
 MODEL:
   TYPE: 'vscnn'
   OPTIMIZER: 
     TYPE: 'SGD'
     LR: 0.1
+    WEIGHT_DECAY: 0.1
   LOSS: 'cross_entropy'
   SNAPSHOT_PATH: ''
 
 # Data params
 DATA:
+  TYPE: ''  # Data name
   COORDS: 3
   JOINTS: 16
   CYCLES: 1
