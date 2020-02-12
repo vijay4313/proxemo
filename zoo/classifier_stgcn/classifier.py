@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from net.utils.tgcn import ConvTemporalGraphical
-from net.utils.graph import Graph
+from zoo.classifier_stgcn.utils.tgcn import ConvTemporalGraphical
+from zoo.classifier_stgcn.utils.graph import Graph
 
 
 class Classifier(nn.Module):
