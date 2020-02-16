@@ -1,34 +1,145 @@
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
 class ViewGroupPredictor(nn.Module):
-    def __init__(self):
-        self.channels = 3
+    def __init__(self, in_channels, layer_channels=[16, 32, 32], n_classes=4):
+        self.in_channels = in_channels
+        self.layer_channels = layer_channels
+        self.num_classes = n_classes
+
+    def _gen_layer_name(self, layer_type, layer_num=''):
+        name = '_'.join([self.__name__, layer_type, layer_num])
+        return name
     
     def build_net(self):
-        pass
+        layer1 = nn.Conv2d(
+            self.in_channels, self.layer_channels[0], (3, 3), (1, 1))
+        layer2 = nn.Conv2d(
+            self.layer_channels[0], self.layer_channels[1], (3, 3), (1, 1))
+        layer3 = nn.Conv2d(
+            self.layer_channels[1], self.layer_channels[2], (3, 3), (2, 2))
 
-    def forward(self):
-        pass
+        self.conv_layers = nn.Sequential(OrderedDict([
+            (self._gen_layer_name('conv', 1), layer1),
+            (self._gen_layer_name('conv', 2), layer2),
+            (self._gen_layer_name('conv', 3), layer3)
+        ]))
+
+        self.final_layers = nn.Sequential(OrderedDict([
+            (self._gen_layer_name('fc', 1), nn.Linear(1024, 128)),
+            (self._gen_layer_name('relu'), nn.ReLU()),
+            (self._gen_layer_name('fc', 2), nn.Linear(128, self.num_classes)),
+            (self._gen_layer_name('softmax'), nn.Softmax())
+        ]))
+
+    def forward(self, input_tensor):
+        conv_out = self.conv_layers(input_tensor)
+        conv_out = conv_out.flatten()
+        final_out = self.final_layers(conv_out)
+
+        return final_out
+
+
+class SkCnn(nn.Module):
+    def __init__(self, n_classes, in_channels, dropout, layer_channels=[32, 64]):
+        self.in_channels = in_channels
+        self.layer_channels = layer_channels
+        self.dropout = dropout
+        self.num_classes = n_classes
+
+    def _gen_layer_name(self, stage, layer_type, layer_num=''):
+        name = '_'.join([self.__name__, 'stage', stage, layer_type, layer_num])
+        return name
+
+    def build_net(self):
+        conv1 = nn.Conv2d(self.in_channels, self.layer_channels[0], (3, 3))
+        bn1 = nn.BatchNorm2d(self.layer_channels[0])
+
+        conv2 = nn.Conv2d(
+            self.layer_channels[0], self.layer_channels[1], (3, 3))
+        max_pool = nn.MaxPool2d((3, 3), (2, 2))
+
+        dropout = nn.Dropout(self.dropout)
+
+        self.conv_stage_1 = nn.Sequential(OrderedDict([
+            (self._gen_layer_name(1, 'conv', 1), conv1),
+            (self._gen_layer_name(1, 'relu', 1), nn.ReLU()),
+            (self._gen_layer_name(1, 'maxpool', 1), max_pool),
+            (self._gen_layer_name(1, 'conv', 2), conv1),
+            (self._gen_layer_name(1, 'relu', 2), nn.ReLU()),
+            (self._gen_layer_name(1, 'maxpool', 2), max_pool),
+            (self._gen_layer_name(1, 'bn'), bn1),
+            (self._gen_layer_name(1, 'drop'), dropout)
+        ]))
+
+        self.conv_stage_2 = nn.Sequential(OrderedDict([
+            (self._gen_layer_name(2, 'conv', 1), conv2),
+            (self._gen_layer_name(2, 'relu', 1), nn.ReLU()),
+            (self._gen_layer_name(2, 'maxpool', 1), max_pool),
+            (self._gen_layer_name(2, 'conv', 2), conv2),
+            (self._gen_layer_name(2, 'relu', 2), nn.ReLU()),
+            (self._gen_layer_name(2, 'maxpool', 2), max_pool),
+            (self._gen_layer_name(2, 'bn'), bn1),
+            (self._gen_layer_name(2, 'drop'), dropout)
+        ]))
+
+        self.final_layers = nn.Sequential(OrderedDict([
+            (self._gen_layer_name(3, 'fc', 1), nn.Linear(1024, 128)),
+            (self._gen_layer_name(3, 'relu'), nn.ReLU()),
+            (self._gen_layer_name(3, 'fc', 2), nn.Linear(128, self.num_classes)),
+            (self._gen_layer_name(3, 'softmax'), nn.Softmax())
+        ]))
+
+    def forward(self, input_tensor):
+        first_conv = self.conv_stage_1(input_tensor)
+        second_conv = self.conv_stage_2(first_conv)
+
+        second_conv = second_conv.flatten()
+        final = self.final_layers(second_conv)
+
+        return final
+
 
 class ViewGroupFeature(nn.Module):
-    def __init__(self):
-        pass
+    def __init__(self, num_groups, n_classes, in_channels, dropout, layer_channels):
+        self.n_groups = num_groups
+        self.in_channels = in_channels
+        self.layer_channels = layer_channels
+        self.dropout = dropout
+        self.n_classes = n_classes
 
     def build_net(self):
-        pass
+        self.models = [SkCnn(self.n_classes, self.in_channels,
+                             self.layer_channels, self.dropout) for _ in range(self.n_groups)]
 
-    def forward(self):
-        pass
+    def forward(self, input_tensor, view_group):
+        out = self.models[view_group](input_tensor)
+        return out
+
+    def forward_all(self, input_tensor):
+        out_all = []
+        for model in self.models:
+            out_all.append(model(input_tensor))
+        return out_all
 
 class ChannelFusion(nn.Module):
-    def __init__(self):
-        pass
+    def __init__(self, num_groups, n_classes):
+        self.n_groups = num_groups
+        self.n_classes = n_classes
 
     def build_net(self):
-        pass
+        self.conv1d = nn.Conv2d(self.n_groups, 1, 1, 1)
+        self.softmax = nn.Softmax(-1)
 
-    def forward(self):
-        pass
+    def forward(self, tensor_list):
+        tensors_stacked = torch.stack(tensor_list, 1).unsqueeze(-1)
+        conv_out = self.conv1d(tensors_stacked)
+        conv_out = conv_out.squeeze()
+        out = self.softmax()
+
+        return out
+        
