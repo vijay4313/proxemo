@@ -75,7 +75,7 @@ class TrainTestLoader(torch.utils.data.Dataset):
         # get data
         data_numpy = np.array(self.data[index])
         label = self.label[index]
-
+        
         # processing
         # if self.random_choose:
         #     data_numpy = tools.random_choose(data_numpy, self.window_size)
@@ -84,4 +84,29 @@ class TrainTestLoader(torch.utils.data.Dataset):
         # if self.random_move:
         #     data_numpy = tools.random_move(data_numpy)
 
+        return data_numpy, label
+    
+class TrainTestLoader_vscnn(torch.utils.data.Dataset):
+
+    def __init__(self, data, label, joints, coords, num_classes):
+        # data: N C T J
+        self.data = np.reshape(data, (data.shape[0], data.shape[1], joints, coords, 1))
+        self.data = np.moveaxis(self.data, [1, 2, 3], [2, 3, 1])
+
+        # load label
+        self.label = label
+
+        self.N, self.C, self.T, self.J, self.M = self.data.shape
+
+    def __len__(self):
+        return len(self.label)
+
+    def __getitem__(self, index):
+        # get data
+        # ---->> 0.0---(3, 75, 16, 1)
+        data_numpy = np.array(self.data[index])
+        label = self.label[index]
+
+                
+        
         return data_numpy, label

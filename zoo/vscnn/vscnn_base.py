@@ -7,13 +7,14 @@ import torch.nn.functional as F
 
 class ViewGroupPredictor(nn.Module):
     def __init__(self, in_channels, n_classes, graph_args, *args):
-        print(f"{in_channels}, {n_classes}, {graph_args}, {args[0]}")
+        super().__init__()
         self.in_channels = in_channels
         self.layer_channels = [16, 32, 32]
         self.num_classes = n_classes
+        self.build_net()
 
     def _gen_layer_name(self, layer_type, layer_num=''):
-        name = '_'.join([self.__name__, layer_type, layer_num])
+        name = '_'.join([self.__class__.__name__, layer_type, str(layer_num)])
         return name
     
     def build_net(self):
