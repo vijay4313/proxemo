@@ -6,9 +6,10 @@ import torch.nn.functional as F
 
 
 class ViewGroupPredictor(nn.Module):
-    def __init__(self, in_channels, layer_channels=[16, 32, 32], n_classes=4):
+    def __init__(self, in_channels, n_classes, graph_args, *args):
+        print(f"{in_channels}, {n_classes}, {graph_args}, {args[0]}")
         self.in_channels = in_channels
-        self.layer_channels = layer_channels
+        self.layer_channels = [16, 32, 32]
         self.num_classes = n_classes
 
     def _gen_layer_name(self, layer_type, layer_num=''):

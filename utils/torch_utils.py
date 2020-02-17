@@ -54,6 +54,6 @@ def get_optimizer(optimizer_name):
 
 def get_loss_fn(loss_name):
     if loss_name == 'cross_entropy':
-        return nn.CrossEntropyLoss
+        return nn.CrossEntropyLoss()
     else:
         raise ValueError('Unknown loss function')

@@ -12,10 +12,11 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init)
 from zoo.classifier_stgcn.classifier import Classifier
+from zoo.vscnn.vscnn_base import ViewGroupPredictor
 
 MODEL_TYPE = {
     'stgcn': Classifier,
-    'vscnn': None
+    'vscnn_view_group_predictor': ViewGroupPredictor
 }
 
 
@@ -53,7 +54,7 @@ class Trainer(object):
             self.args['MODEL']['SNAPSHOT_PATH'])
         self.model.cuda(self.cuda)
         self.model.apply(weights_init)
-        self.loss = get_loss_fn([self.args['MODEL']['LOSS']])
+        self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
         self.step_epochs = np.array([
             math.ceil(float(self.args['EPOCHS'] / x)) for x in self.args['STEP']])
         # optimizer
@@ -91,8 +92,8 @@ class Trainer(object):
     def show_iter_info(self, mode):
         info = ''
         for k, v in self.iter_info.items():
-            self.logger.add_scalar(
-                "-".join([mode, "Iter", k]), v, self.meta_info['iter'])
+#            self.logger.add_scalar(
+#                "-".join([mode, "Iter", k]), v, self.meta_info['iter'])
             if isinstance(v, float):
                 info = info + ' | {}: {:.4f}'.format(k, v)
             else:
@@ -146,7 +147,7 @@ class Trainer(object):
 
         self.epoch_info['mean_loss'] = np.mean(loss_value)
         self.show_epoch_info(mode='train')
-#        self.io.print_timer()
+        # self.io.print_timer()
         # for k in self.args.topk:
         #     self.calculate_topk(k, show=False)
         # if self.accuracy_updated:

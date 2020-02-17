@@ -67,9 +67,6 @@ class Classifier(nn.Module):
 
         # data normalization
         N, C, T, V, M = x.size()
-        print('-----Input-----')
-        print(x.size())
-        print(x)
         x = x.permute(0, 4, 3, 1, 2).contiguous()
         x = x.view(N * M, V * C, T)
         x = self.data_bn(x)
@@ -89,9 +86,6 @@ class Classifier(nn.Module):
         # prediction
         x = self.fcn(x)
         x = x.view(x.size(0), -1)
-        print('-----Output-----')
-        print(x.size())
-        print(x)
         return x, f
 
     def extract_feature(self, x):
