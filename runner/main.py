@@ -24,7 +24,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
+parser.add_argument('--settings', type=str, default='vscnn_vgp', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 args = yaml_parser.yaml_parser(cli_args.settings)
@@ -32,31 +32,77 @@ model_args = args['MODEL']
 data_args = args["DATA"]
 
 # Load datasets
-data, labels, data_train, labels_train, data_test, labels_test =\
-    loader.load_data(data_args['FEATURES_FILE'],
-                     data_args['LABELS_FILE'],
-                     data_args['COORDS'],
-                     data_args['JOINTS'],
-                     cycles=data_args['CYCLES'])
-num_classes = np.unique(labels_train).shape[0]
+if data_args['TYPE'] == 'single_view':
+    data, labels, data_train, labels_train, data_test, labels_test =\
+        loader.load_data(data_args['FEATURES_FILE'],
+                         data_args['LABELS_FILE'],
+                         data_args['COORDS'],
+                         data_args['JOINTS'],
+                         cycles=data_args['CYCLES'])
+    num_classes = np.unique(labels_train).shape[0]
+
+# Load datasets multiview
+if data_args['TYPE'] == 'multi_view':
+    # load Data
+    data, labels, \
+    data_train, labels_train, \
+    data_test, labels_test , \
+    angles_train, angles_test = \
+        loader.load_data_multiview(data_args['FEATURES_FILE'],
+                                   data_args['LABELS_FILE'],
+                                   data_args['COORDS'],
+                                   data_args['JOINTS'],
+                                   cycles=data_args['CYCLES'])
+        
+    # convert to view group
+    angles_train = list((np.asarray(angles_train)/90).astype(int))
+    angles_test = list((np.asarray(angles_test)/90).astype(int))
+    
+    # number of classes
+    num_classes_label = np.unique(labels_train).shape[0]
+    num_classes_angles = np.unique(angles_train).shape[0]
 
 # Convert datasets to Pytorch data
 
-data_loader_train_test = {
-    "train": torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(
-            data_train, labels_train, data_args['JOINTS'], data_args['COORDS'], num_classes),
-        batch_size=args['BATCH_SIZE'],
-        shuffle=True,
-        num_workers=args['NUM_WORKERS'],
-        drop_last=True),
-    "test": torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(
-            data_test, labels_test, data_args['JOINTS'], data_args['COORDS'], num_classes),
-        batch_size=args['BATCH_SIZE'],
-        shuffle=True,
-        num_workers=args['NUM_WORKERS'],
-        drop_last=True)}
+if model_args['TYPE'] == 'stgcn':
+    num_classes = num_classes_label
+    data_loader_train_test = {
+        "train": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader(
+                data_train, labels_train, data_args['JOINTS'], data_args['COORDS'], num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True),
+        "test": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader(
+                data_test, labels_test, data_args['JOINTS'], data_args['COORDS'], num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True)}
+            
+if model_args['TYPE'] == 'vscnn_view_group_predictor':
+    num_classes = num_classes_angles
+    data_loader_train_test = {
+        "train": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_train, angles_train, 
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True),
+        "test": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_test, angles_test,
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True)}
 
 graph_dict = {'strategy': 'spatial'}
 

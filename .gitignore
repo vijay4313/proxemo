@@ -6,3 +6,6 @@ data/*
 
 # logs
 logs/*
+
+# temp files
+temp/*
