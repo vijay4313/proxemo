@@ -32,18 +32,28 @@ class ViewGroupPredictor(nn.Module):
         ]))
 
         self.final_layers = nn.Sequential(OrderedDict([
-            (self._gen_layer_name('fc', 1), nn.Linear(1024, 128)),
+            (self._gen_layer_name('fc', 1), nn.Linear(453152, 128)),
             (self._gen_layer_name('relu'), nn.ReLU()),
             (self._gen_layer_name('fc', 2), nn.Linear(128, self.num_classes)),
             (self._gen_layer_name('softmax'), nn.Softmax())
         ]))
 
     def forward(self, input_tensor):
-        conv_out = self.conv_layers(input_tensor)
-        conv_out = conv_out.flatten()
+        # convert [N, H, W, C] to [N, C, H, W]
+        input_tensor_reshaped = torch.empty((input_tensor.shape[0],
+                                             input_tensor.shape[3],
+                                             input_tensor.shape[1],
+                                             input_tensor.shape[2]), device = input_tensor.device)
+        input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
+        input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
+        input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
+        
+        # forward pass
+        conv_out = self.conv_layers(input_tensor_reshaped)
+        conv_out = conv_out.view((input_tensor_reshaped.shape[0],-1))
         final_out = self.final_layers(conv_out)
 
-        return final_out
+        return final_out, None
 
 
 class SkCnn(nn.Module):

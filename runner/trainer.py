@@ -132,6 +132,7 @@ class Trainer(object):
             # forward
             output, _ = self.model(data)
             loss = self.loss(output, label)
+            
 
             # backward
             self.optimizer.zero_grad()

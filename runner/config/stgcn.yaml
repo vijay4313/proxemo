@@ -12,7 +12,6 @@ TPOK: [1]
 SAVE_FILE: '../output/deepfeatures.h5'
 OUTPUT_PATH: '../logs'
 STEP: [0.5, 0.75, 0.875]
-LOG_INTERVAL: 1 # 100
 PAVI_LOG: True
 EVAL_INTERVAL: 10
 WORK_DIR: '../logs'

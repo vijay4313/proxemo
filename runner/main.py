@@ -39,7 +39,7 @@ if data_args['TYPE'] == 'single_view':
                          data_args['COORDS'],
                          data_args['JOINTS'],
                          cycles=data_args['CYCLES'])
-    num_classes = np.unique(labels_train).shape[0]
+    num_classes_label = np.unique(labels_train).shape[0]
 
 # Load datasets multiview
 if data_args['TYPE'] == 'multi_view':
@@ -84,6 +84,7 @@ if model_args['TYPE'] == 'stgcn':
             
 if model_args['TYPE'] == 'vscnn_view_group_predictor':
     num_classes = num_classes_angles
+    print(f"---> num classes : {num_classes}")
     data_loader_train_test = {
         "train": torch.utils.data.DataLoader(
             dataset=loader.TrainTestLoader_vscnn(
