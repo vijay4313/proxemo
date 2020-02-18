@@ -135,14 +135,6 @@ class TrainTestLoader(torch.utils.data.Dataset):
         data_numpy = np.array(self.data[index])
         label = self.label[index]
         
-        # processing
-        # if self.random_choose:
-        #     data_numpy = tools.random_choose(data_numpy, self.window_size)
-        # elif self.window_size > 0:
-        #     data_numpy = tools.auto_pading(data_numpy, self.window_size)
-        # if self.random_move:
-        #     data_numpy = tools.random_move(data_numpy)
-
         return data_numpy, label
     
 class TrainTestLoader_vscnn(torch.utils.data.Dataset):
@@ -181,7 +173,7 @@ class TrainTestLoader_vscnn(torch.utils.data.Dataset):
         
     def __getitem__(self, index):
         # get data
-        # ---->> 0.0---(3, 75, 16, 1)
+        # Data format --> (3, 75, 16, 1)
         data_numpy = np.array(self.data[index])
         label = self.label[index]
         img_data = self._convert_skeletion_to_image(data_numpy)

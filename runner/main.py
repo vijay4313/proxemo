@@ -24,7 +24,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vscnn_vgp', metavar='s',
+parser.add_argument('--settings', type=str, default='vscnn_vgf', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 args = yaml_parser.yaml_parser(cli_args.settings)
@@ -54,7 +54,7 @@ if data_args['TYPE'] == 'multi_view':
                                    data_args['JOINTS'],
                                    cycles=data_args['CYCLES'])
         
-    # convert to view group
+    # convert to view group (4 view groups)
     angles_train = list((np.asarray(angles_train)/90).astype(int))
     angles_test = list((np.asarray(angles_test)/90).astype(int))
     
@@ -111,7 +111,7 @@ if model_args['TYPE'] == 'vscnn_view_group_feature':
     data_loader_train_test = {
         "train": torch.utils.data.DataLoader(
             dataset=loader.TrainTestLoader_vscnn(
-                data_train, angles_train, 
+                data_train, list(zip(labels_train, angles_train)), 
                 data_args['JOINTS'], data_args['COORDS'],
                 num_classes),
             batch_size=args['BATCH_SIZE'],
@@ -120,7 +120,7 @@ if model_args['TYPE'] == 'vscnn_view_group_feature':
             drop_last=True),
         "test": torch.utils.data.DataLoader(
             dataset=loader.TrainTestLoader_vscnn(
-                data_test, angles_test,
+                data_test, list(zip(labels_test, angles_test)),
                 data_args['JOINTS'], data_args['COORDS'],
                 num_classes),
             batch_size=args['BATCH_SIZE'],

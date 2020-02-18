@@ -20,6 +20,7 @@ TERMINAL_LOG: True
 # Model parameters
 MODEL:
   TYPE: 'vscnn_view_group_feature'
+  DROPOUT: 0.5
   OPTIMIZER: 
     TYPE: 'sgd'
     LR: 0.1

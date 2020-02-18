@@ -52,7 +52,7 @@ class Trainer(object):
         self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](
             self.args['DATA']['COORDS'],
             self.num_classes,
-            self.graph_dict, 
+            self.graph_dict
             )
         self.model.cuda(self.cuda)
         self.model.apply(weights_init)
@@ -62,22 +62,18 @@ class Trainer(object):
         # optimizer
         optimizer_args = self.args['MODEL']['OPTIMIZER']
         self.lr = optimizer_args['LR']
-        print(f"---->> weight decay : {self.model.parameters}")
-# =============================================================================
-#         if isinstance(self.model.models, list):
-#             self.optimizer = []
-#             for model in self.model.models:
-#                 self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
-#                                                                    lr=self.lr,
-#                                                                    weight_decay=optimizer_args['WEIGHT_DECAY']))
-#         else:
-#             self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
-#                                                                    lr=self.lr,
-#                                                                    weight_decay=optimizer_args['WEIGHT_DECAY'])
-# =============================================================================
-        self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
-                                                                    lr=self.lr,
-                                                                    weight_decay=optimizer_args['WEIGHT_DECAY'])
+        # handling multiple modes in case of feature predictor for vscnn
+        if self.args['MODEL']['OPTIMIZER'] == 'vscnn_view_group_predictor':
+            self.optimizer = []
+            for model in self.model.models:
+                self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
+                                                                   lr=self.lr,
+                                                                   weight_decay=optimizer_args['WEIGHT_DECAY']))
+        else:
+            self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
+                                                                   lr=self.lr,
+                                                                   weight_decay=optimizer_args['WEIGHT_DECAY'])
+        
     def adjust_lr(self):
 
         # if self.args.optimizer == 'SGD' and\
@@ -147,35 +143,26 @@ class Trainer(object):
             group = None
 
             # forward
-# =============================================================================
-#             if isinstance(self.model.models, list):
-#                 global_loss = 0
-#                 outputs = self.model(data, group)
-#                 for index in range(len(self.model.models)):
-#                     if outputs[index] is not None:
-#                         loss = self.loss(outputs[index], label)
-#                         global_loss += loss
-#         
-#                         # backward
-#                         self.optimizer[index].zero_grad()
-#                         loss.backward()
-#                         self.optimizer[index].step()
-#             else:
-#                 output, _ = self.model(data, group)
-#                 loss = self.loss(output, label)
-#                         
-#                 # backward
-#                 self.optimizer.zero_grad()
-#                 loss.backward()
-#                 self.optimizer.step()
-# =============================================================================
-            output, _ = self.model(data)
-            loss = self.loss(output, label)
-                                 
-            # backward
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+            # handling multiple modes in case of feature predictor for vscnn
+            if self.args['MODEL']['OPTIMIZER'] == 'vscnn_view_group_predictor':
+                loss = 0
+                outputs = self.model(data, group)
+                for index in range(len(self.model.models)):
+                    if outputs[index] is not None:
+                        loss += self.loss(outputs[index], label)
+        
+                        # backward
+                        self.optimizer[index].zero_grad()
+                        loss.backward()
+                        self.optimizer[index].step()
+            else:
+                output, _ = self.model(data)
+                loss = self.loss(output, label)
+                        
+                # backward
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
             # statistics
             

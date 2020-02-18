@@ -9,3 +9,6 @@ logs/*
 
 # temp files
 temp/*
+
+# compile files
+.pyc
