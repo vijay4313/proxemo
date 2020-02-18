@@ -13,10 +13,12 @@ from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init)
 from zoo.classifier_stgcn.classifier import Classifier
 from zoo.vscnn.vscnn_base import ViewGroupPredictor
+from zoo.vscnn.vscnn_base import ViewGroupFeature
 
 MODEL_TYPE = {
     'stgcn': Classifier,
-    'vscnn_view_group_predictor': ViewGroupPredictor
+    'vscnn_view_group_predictor': ViewGroupPredictor,
+    'vscnn_view_group_feature': ViewGroupFeature
 }
 
 
@@ -51,7 +53,7 @@ class Trainer(object):
             self.args['DATA']['COORDS'],
             self.num_classes,
             self.graph_dict, 
-            self.args['MODEL']['SNAPSHOT_PATH'])
+            )
         self.model.cuda(self.cuda)
         self.model.apply(weights_init)
         self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
@@ -60,9 +62,17 @@ class Trainer(object):
         # optimizer
         optimizer_args = self.args['MODEL']['OPTIMIZER']
         self.lr = optimizer_args['LR']
-        self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
-                                                               lr=self.lr,
-                                                               weight_decay=optimizer_args['WEIGHT_DECAY'])
+        print(f"---->> weight decay : {self.model.parameters}")
+        if isinstance(self.model.models, list):
+            self.optimizer = []
+            for model in self.model.models:
+                self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
+                                                                   lr=self.lr,
+                                                                   weight_decay=optimizer_args['WEIGHT_DECAY']))
+        else:
+            self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
+                                                                   lr=self.lr,
+                                                                   weight_decay=optimizer_args['WEIGHT_DECAY'])
 
     def adjust_lr(self):
 
@@ -128,19 +138,35 @@ class Trainer(object):
             # get data
             data = data.float().to(self.cuda)
             label = label.long().to(self.cuda)
+            
+            # TODO: get viewgroup info
+            group = None
 
             # forward
-            output, _ = self.model(data)
-            loss = self.loss(output, label)
-            
-
-            # backward
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
+            if isinstance(self.model.models, list):
+                global_loss = 0
+                outputs = self.model(data, group)
+                for index in range(len(self.model.models)):
+                    if outputs[index] is not None:
+                        loss = self.loss(outputs[index], label)
+                        global_loss += loss
+        
+                        # backward
+                        self.optimizer[index].zero_grad()
+                        loss.backward()
+                        self.optimizer[index].step()
+            else:
+                output, _ = self.model(data, group)
+                loss = self.loss(output, label)
+                        
+                # backward
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+         
             # statistics
-            self.iter_info['loss'] = loss.data.item()
+            
+            self.iter_info['loss'] = global_loss.data.item()
             self.iter_info['lr'] = '{:.6f}'.format(self.lr)
             loss_value.append(self.iter_info['loss'])
             self.show_iter_info(mode='train')

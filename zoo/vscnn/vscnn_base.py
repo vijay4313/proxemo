@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import numpy as np
+
 
 class ViewGroupPredictor(nn.Module):
     def __init__(self, in_channels, n_classes, graph_args, *args):
@@ -107,6 +109,16 @@ class SkCnn(nn.Module):
         ]))
 
     def forward(self, input_tensor):
+        
+        # convert [N, H, W, C] to [N, C, H, W]
+        input_tensor_reshaped = torch.empty((input_tensor.shape[0],
+                                             input_tensor.shape[3],
+                                             input_tensor.shape[1],
+                                             input_tensor.shape[2]), device = input_tensor.device)
+        input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
+        input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
+        input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
+        
         first_conv = self.conv_stage_1(input_tensor)
         second_conv = self.conv_stage_2(first_conv)
 
@@ -117,20 +129,36 @@ class SkCnn(nn.Module):
 
 
 class ViewGroupFeature(nn.Module):
-    def __init__(self, num_groups, n_classes, in_channels, dropout, layer_channels):
+#    def __init__(self, num_groups, n_classes, in_channels, dropout, layer_channels):
+#    def __init__(self, in_channels, n_classes, num_groups, dropout, layer_channels):
+    def __init__(self, in_channels, n_classes, graph_args, *args):
+        super().__init__()
+        print(f" --->>>> {args}")
+        num_groups = 4
+        dropout = 0.5
+        layer_channels = 3
         self.n_groups = num_groups
         self.in_channels = in_channels
         self.layer_channels = layer_channels
         self.dropout = dropout
         self.n_classes = n_classes
+        self.build_net()
 
     def build_net(self):
         self.models = [SkCnn(self.n_classes, self.in_channels,
                              self.layer_channels, self.dropout) for _ in range(self.n_groups)]
 
     def forward(self, input_tensor, view_group):
-        out = self.models[view_group](input_tensor)
-        return out
+        view_group = np.asarray(view_group)
+        outputs = []
+        for group in range(self.n_groups):
+            selected_indices = np.where(view_group == group)
+            if selected_indices.size > 0:
+                tensor = input_tensor[selected_indices, :, : , :]
+                outputs.append(self.models[group](tensor))
+            else:
+                outputs.append(None)
+        return outputs
 
     def forward_all(self, input_tensor):
         out_all = []

@@ -24,7 +24,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vscnn_vgp', metavar='s',
+parser.add_argument('--settings', type=str, default='vscnn_vgf', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 args = yaml_parser.yaml_parser(cli_args.settings)
@@ -84,6 +84,29 @@ if model_args['TYPE'] == 'stgcn':
             
 if model_args['TYPE'] == 'vscnn_view_group_predictor':
     num_classes = num_classes_angles
+    print(f"---> num classes : {num_classes}")
+    data_loader_train_test = {
+        "train": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_train, angles_train, 
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True),
+        "test": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_test, angles_test,
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True)}
+            
+if model_args['TYPE'] == 'vscnn_view_group_feature':
+    num_classes = num_classes_label
     print(f"---> num classes : {num_classes}")
     data_loader_train_test = {
         "train": torch.utils.data.DataLoader(

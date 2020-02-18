@@ -48,7 +48,6 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3):
     label_files.sort()
     
     angle_regx_str = _path_features.replace('*', '(\d*)')
-    print(f"----> {angle_regx_str}")
     angle_regx = re.compile(angle_regx_str)
     
     all_data_train = []
