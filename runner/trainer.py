@@ -63,17 +63,21 @@ class Trainer(object):
         optimizer_args = self.args['MODEL']['OPTIMIZER']
         self.lr = optimizer_args['LR']
         print(f"---->> weight decay : {self.model.parameters}")
-        if isinstance(self.model.models, list):
-            self.optimizer = []
-            for model in self.model.models:
-                self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
-                                                                   lr=self.lr,
-                                                                   weight_decay=optimizer_args['WEIGHT_DECAY']))
-        else:
-            self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
-                                                                   lr=self.lr,
-                                                                   weight_decay=optimizer_args['WEIGHT_DECAY'])
-
+# =============================================================================
+#         if isinstance(self.model.models, list):
+#             self.optimizer = []
+#             for model in self.model.models:
+#                 self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
+#                                                                    lr=self.lr,
+#                                                                    weight_decay=optimizer_args['WEIGHT_DECAY']))
+#         else:
+#             self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
+#                                                                    lr=self.lr,
+#                                                                    weight_decay=optimizer_args['WEIGHT_DECAY'])
+# =============================================================================
+        self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
+                                                                    lr=self.lr,
+                                                                    weight_decay=optimizer_args['WEIGHT_DECAY'])
     def adjust_lr(self):
 
         # if self.args.optimizer == 'SGD' and\
@@ -143,30 +147,39 @@ class Trainer(object):
             group = None
 
             # forward
-            if isinstance(self.model.models, list):
-                global_loss = 0
-                outputs = self.model(data, group)
-                for index in range(len(self.model.models)):
-                    if outputs[index] is not None:
-                        loss = self.loss(outputs[index], label)
-                        global_loss += loss
-        
-                        # backward
-                        self.optimizer[index].zero_grad()
-                        loss.backward()
-                        self.optimizer[index].step()
-            else:
-                output, _ = self.model(data, group)
-                loss = self.loss(output, label)
-                        
-                # backward
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-         
+# =============================================================================
+#             if isinstance(self.model.models, list):
+#                 global_loss = 0
+#                 outputs = self.model(data, group)
+#                 for index in range(len(self.model.models)):
+#                     if outputs[index] is not None:
+#                         loss = self.loss(outputs[index], label)
+#                         global_loss += loss
+#         
+#                         # backward
+#                         self.optimizer[index].zero_grad()
+#                         loss.backward()
+#                         self.optimizer[index].step()
+#             else:
+#                 output, _ = self.model(data, group)
+#                 loss = self.loss(output, label)
+#                         
+#                 # backward
+#                 self.optimizer.zero_grad()
+#                 loss.backward()
+#                 self.optimizer.step()
+# =============================================================================
+            output, _ = self.model(data)
+            loss = self.loss(output, label)
+                                 
+            # backward
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
             # statistics
             
-            self.iter_info['loss'] = global_loss.data.item()
+            self.iter_info['loss'] = loss.data.item()
             self.iter_info['lr'] = '{:.6f}'.format(self.lr)
             loss_value.append(self.iter_info['loss'])
             self.show_iter_info(mode='train')

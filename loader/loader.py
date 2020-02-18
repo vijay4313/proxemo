@@ -167,15 +167,16 @@ class TrainTestLoader_vscnn(torch.utils.data.Dataset):
                              data_numpy.shape[2],
                              data_numpy.shape[0]))
 
-        img_data[:,:,0] = data_numpy[0,:,:,0] * ( 255 / (data_max[0] - data_min[0]) )
-        img_data[:,:,1] = data_numpy[1,:,:,0] * ( 255 / (data_max[1] - data_min[1]) )
-        img_data[:,:,2] = data_numpy[2,:,:,0] * ( 255 / (data_max[2] - data_min[2]) )
+        img_data[:,:,0] = (data_max[0] - data_numpy[0,:,:,0]) * ( 255 / (data_max[0] - data_min[0]) )
+        img_data[:,:,1] = (data_max[1] - data_numpy[1,:,:,0]) * ( 255 / (data_max[1] - data_min[1]) )
+        img_data[:,:,2] = (data_max[2] - data_numpy[2,:,:,0]) * ( 255 / (data_max[2] - data_min[2]) )
+        
         
         img_data = cv2.resize(img_data, (244,244))
 #        cv2.imshow("testframe", img_data)
 #        cv2.waitKey(10)
-        cv2.imwrite(f"../temp/{np.random.randint(low=1, high=100)}.jpg",
-                               img_data)
+#        cv2.imwrite(f"../temp/{np.random.randint(low=1, high=100)}.png",
+#                               img_data)
         return img_data
         
     def __getitem__(self, index):
