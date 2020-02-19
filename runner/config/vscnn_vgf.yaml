@@ -1,5 +1,5 @@
 MODE: 'train' # train/test/save_fearures
-OUTPUT_PATH: '../output/vscnn_vgp'
+OUTPUT_PATH: '../output/vscnn_vgf'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 1
