@@ -8,7 +8,7 @@ import numpy as np
 
 
 class ViewGroupPredictor(nn.Module):
-    def __init__(self, in_channels, n_classes, graph_args, *args):
+    def __init__(self, in_channels, n_classes):
         super().__init__()
         self.in_channels = in_channels
         self.layer_channels = [16, 32, 32]
@@ -60,30 +60,38 @@ class ViewGroupPredictor(nn.Module):
 
 class SkCnn(nn.Module):
     def __init__(self, n_classes, in_channels, dropout, layer_channels=[32, 64]):
+        super().__init__()
         self.in_channels = in_channels
         self.layer_channels = layer_channels
         self.dropout = dropout
         self.num_classes = n_classes
+        self.build_net()
 
     def _gen_layer_name(self, stage, layer_type, layer_num=''):
-        name = '_'.join([self.__name__, 'stage', stage, layer_type, layer_num])
+        name = '_'.join([self.__class__.__name__, 'stage', str(stage), layer_type, str(layer_num)])
         return name
 
     def build_net(self):
-        conv1 = nn.Conv2d(self.in_channels, self.layer_channels[0], (3, 3))
+        conv1_1 = nn.Conv2d(self.in_channels, self.layer_channels[0], (3, 3))
+        conv1_2 = nn.Conv2d(self.layer_channels[0], self.layer_channels[0], (3, 3))
         bn1 = nn.BatchNorm2d(self.layer_channels[0])
 
-        conv2 = nn.Conv2d(
+
+        conv2_1 = nn.Conv2d(
             self.layer_channels[0], self.layer_channels[1], (3, 3))
+        conv2_2 = nn.Conv2d(
+            self.layer_channels[1], self.layer_channels[1], (3, 3))
+        bn2 = nn.BatchNorm2d(self.layer_channels[1])
+        
         max_pool = nn.MaxPool2d((3, 3), (2, 2))
 
         dropout = nn.Dropout(self.dropout)
 
         self.conv_stage_1 = nn.Sequential(OrderedDict([
-            (self._gen_layer_name(1, 'conv', 1), conv1),
+            (self._gen_layer_name(1, 'conv', 1), conv1_1),
             (self._gen_layer_name(1, 'relu', 1), nn.ReLU()),
             (self._gen_layer_name(1, 'maxpool', 1), max_pool),
-            (self._gen_layer_name(1, 'conv', 2), conv1),
+            (self._gen_layer_name(1, 'conv', 2), conv1_2),
             (self._gen_layer_name(1, 'relu', 2), nn.ReLU()),
             (self._gen_layer_name(1, 'maxpool', 2), max_pool),
             (self._gen_layer_name(1, 'bn'), bn1),
@@ -91,18 +99,18 @@ class SkCnn(nn.Module):
         ]))
 
         self.conv_stage_2 = nn.Sequential(OrderedDict([
-            (self._gen_layer_name(2, 'conv', 1), conv2),
+            (self._gen_layer_name(2, 'conv', 1), conv2_1),
             (self._gen_layer_name(2, 'relu', 1), nn.ReLU()),
             (self._gen_layer_name(2, 'maxpool', 1), max_pool),
-            (self._gen_layer_name(2, 'conv', 2), conv2),
+            (self._gen_layer_name(2, 'conv', 2), conv2_2),
             (self._gen_layer_name(2, 'relu', 2), nn.ReLU()),
             (self._gen_layer_name(2, 'maxpool', 2), max_pool),
-            (self._gen_layer_name(2, 'bn'), bn1),
+            (self._gen_layer_name(2, 'bn'), bn2),
             (self._gen_layer_name(2, 'drop'), dropout)
         ]))
 
         self.final_layers = nn.Sequential(OrderedDict([
-            (self._gen_layer_name(3, 'fc', 1), nn.Linear(1024, 128)),
+            (self._gen_layer_name(3, 'fc', 1), nn.Linear(9216, 128)),
             (self._gen_layer_name(3, 'relu'), nn.ReLU()),
             (self._gen_layer_name(3, 'fc', 2), nn.Linear(128, self.num_classes)),
             (self._gen_layer_name(3, 'softmax'), nn.Softmax())
@@ -118,25 +126,16 @@ class SkCnn(nn.Module):
         input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
         input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
         input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
-        
-        first_conv = self.conv_stage_1(input_tensor)
+        first_conv = self.conv_stage_1(input_tensor_reshaped)
         second_conv = self.conv_stage_2(first_conv)
-
-        second_conv = second_conv.flatten()
+        second_conv = second_conv.view((input_tensor_reshaped.shape[0],-1))
         final = self.final_layers(second_conv)
 
         return final
 
-
 class ViewGroupFeature(nn.Module):
-#    def __init__(self, num_groups, n_classes, in_channels, dropout, layer_channels):
-#    def __init__(self, in_channels, n_classes, num_groups, dropout, layer_channels):
-    def __init__(self, in_channels, n_classes, graph_args, *args):
+    def __init__(self, in_channels, n_classes, num_groups, dropout, layer_channels):
         super().__init__()
-        print(f" --->>>> {args}")
-        num_groups = 4
-        dropout = 0.5
-        layer_channels = 3
         self.n_groups = num_groups
         self.in_channels = in_channels
         self.layer_channels = layer_channels
@@ -146,7 +145,7 @@ class ViewGroupFeature(nn.Module):
 
     def build_net(self):
         self.models = [SkCnn(self.n_classes, self.in_channels,
-                             self.layer_channels, self.dropout) for _ in range(self.n_groups)]
+                             self.dropout, self.layer_channels) for _ in range(self.n_groups)]
 
     def forward(self, input_tensor, view_group):
         view_group = np.asarray(view_group)

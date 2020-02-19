@@ -62,10 +62,11 @@ if data_args['TYPE'] == 'multi_view':
     num_classes_label = np.unique(labels_train).shape[0]
     num_classes_angles = np.unique(angles_train).shape[0]
 
-# Convert datasets to Pytorch data
+# Convert datasets to Pytorch data and model specific parameters
 
 if model_args['TYPE'] == 'stgcn':
     num_classes = num_classes_label
+    model_kwargs = {}
     data_loader_train_test = {
         "train": torch.utils.data.DataLoader(
             dataset=loader.TrainTestLoader(
@@ -84,6 +85,7 @@ if model_args['TYPE'] == 'stgcn':
             
 if model_args['TYPE'] == 'vscnn_view_group_predictor':
     num_classes = num_classes_angles
+    model_kwargs = {}
     print(f"---> num classes : {num_classes}")
     data_loader_train_test = {
         "train": torch.utils.data.DataLoader(
@@ -107,6 +109,7 @@ if model_args['TYPE'] == 'vscnn_view_group_predictor':
             
 if model_args['TYPE'] == 'vscnn_view_group_feature':
     num_classes = num_classes_label
+    model_kwargs = {'NUM_GROUPS' : num_classes_angles}
     print(f"---> num classes : {num_classes}")
     data_loader_train_test = {
         "train": torch.utils.data.DataLoader(
@@ -132,7 +135,7 @@ graph_dict = {'strategy': 'spatial'}
 
 # Build model
 model = Trainer(args, data_loader_train_test,
-                num_classes, graph_dict)
+                num_classes, graph_dict, model_kwargs)
 
 # Run train/test loop
 if args['MODE'] == 'train':

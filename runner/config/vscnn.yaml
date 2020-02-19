@@ -1,5 +1,5 @@
 MODE: 'train' # train/test/save_fearures
-OUTPUT_PATH:
+OUTPUT_PATH: '../output/vscnn'
 EPOCHS: 500
 START_EPOCH: 0
 LOG_INTERVAL: 1
@@ -9,13 +9,12 @@ NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TPOK: [1]
-SAVE_FILE: '../output/deepfeatures.h5'
-OUTPUT_PATH: '../logs'
+SAVE_FILE: '../output/vscnn/deepfeatures.h5'
 STEP: [0.5, 0.75, 0.875]
 LOG_INTERVAL: 1 # 100
 PAVI_LOG: True
 EVAL_INTERVAL: 10
-WORK_DIR: '../logs'
+WORK_DIR: '../logs/vscnn'
 TERMINAL_LOG: True
 
 # Model parameters
@@ -26,7 +25,7 @@ MODEL:
     LR: 0.1
     WEIGHT_DECAY: 0.1
   LOSS: 'cross_entropy'
-  SNAPSHOT_PATH: '../output'
+  SNAPSHOT_PATH: '../output/vscnn'
 
 # Data params
 DATA:
