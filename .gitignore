@@ -4,5 +4,14 @@
 # data files
 data/*
 
+# output files
+output/*
+
 # logs
 logs/*
+
+# temp files
+temp/*
+
+# compile files
+*.pyc

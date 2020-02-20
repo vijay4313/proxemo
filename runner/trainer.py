@@ -1,6 +1,8 @@
 import math
 import os
 
+from datetime import datetime
+
 import h5py
 import numpy as np
 import torch
@@ -12,19 +14,21 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init)
 from zoo.classifier_stgcn.classifier import Classifier
+from zoo.vscnn.vscnn_base import ViewGroupPredictor
+from zoo.vscnn.vscnn_base import ViewGroupFeature
 
 MODEL_TYPE = {
     'stgcn': Classifier,
-    'vscnn': None
+    'vscnn_view_group_predictor': ViewGroupPredictor,
+    'vscnn_view_group_feature': ViewGroupFeature
 }
-
 
 class Trainer(object):
     """
         Processor for gait generation
     """
 
-    def __init__(self, args, data_loader, num_classes, graph_dict):
+    def __init__(self, args, data_loader, num_classes, graph_dict, model_kwargs):
 
         self.args = args
         self.data_loader = data_loader
@@ -37,32 +41,59 @@ class Trainer(object):
         self.best_epoch = None
         self.best_accuracy = np.zeros((1, np.max(self.args['TPOK'])))
         self.accuracy_updated = False
-        log_dir = os.path.join(args['OUTPUT_PATH'], 'logs')
+        now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
+        log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', now)
         self.logger = SummaryWriter(log_dir=log_dir)
         self.cuda = args['CUDA_DEVICE'] if args['CUDA_DEVICE'] is not None else 0
         self.graph_dict = graph_dict
         self.TERMINAL_LOG = args['TERMINAL_LOG']
-        self.build_model()
+        self.build_model(model_kwargs)
 
-    def build_model(self):
+    def build_model(self, model_kwargs):
+        # model parameters
+        if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+            params = [self.args['DATA']['COORDS'],
+                      self.num_classes,
+                      model_kwargs['NUM_GROUPS'],
+                      self.args['MODEL']['DROPOUT'],
+                      self.args['MODEL']['SKCNN_LAYER_CHANNELS']
+                      ]
+        elif self.args['MODEL']['TYPE'] == 'vscnn_view_group_predictor':
+            params = [self.args['DATA']['COORDS'],
+                      self.num_classes
+                      ]
+        else:
+            params = [self.args['DATA']['COORDS'],
+                      self.num_classes,
+                      self.graph_dict
+                      ]
+
         # model
-        self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](
-            self.args['DATA']['COORDS'],
-            self.num_classes,
-            self.graph_dict, 
-            self.args['MODEL']['SNAPSHOT_PATH'])
-        self.model.cuda(self.cuda)
-        self.model.apply(weights_init)
-        self.loss = get_loss_fn([self.args['MODEL']['LOSS']])
+        self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](*params)
+        self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
         self.step_epochs = np.array([
             math.ceil(float(self.args['EPOCHS'] / x)) for x in self.args['STEP']])
+            
         # optimizer
         optimizer_args = self.args['MODEL']['OPTIMIZER']
         self.lr = optimizer_args['LR']
-        self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
-                                                               lr=self.lr,
-                                                               weight_decay=optimizer_args['WEIGHT_DECAY'])
-
+        
+        # handling multiple modes in case of feature predictor for vscnn
+        if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+            self.optimizer = []
+            for model in self.model.models:
+                model.apply(weights_init)
+                model.to(self.cuda)
+                self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
+                                                                   lr=self.lr,
+                                                                   weight_decay=optimizer_args['WEIGHT_DECAY']))
+        else:
+            self.model.apply(weights_init)
+            self.model.to(self.cuda)
+            self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
+                                                                   lr=self.lr,
+                                                                   weight_decay=optimizer_args['WEIGHT_DECAY'])
+        
     def adjust_lr(self):
 
         # if self.args.optimizer == 'SGD' and\
@@ -77,7 +108,7 @@ class Trainer(object):
         print_str = ''
         for k, v in self.epoch_info.items():
             self.logger.add_scalar(
-                "-".join([mode, "Epoch", k]), v, self.meta_info['epoch'])
+                "-".join([mode, "epoch", k]), v, self.meta_info['epoch'])
             if isinstance(v, float):
                 print_str = print_str + ' | {}: {:.4f}'.format(k.upper(), v)
             else:
@@ -123,30 +154,56 @@ class Trainer(object):
         loader = self.data_loader['train']
         loss_value = []
 
-        for data, label in loader:
-            # get data
-            data = data.float().to(self.cuda)
-            label = label.long().to(self.cuda)
-
+        for data, label_and_group in loader:
             # forward
-            output, _ = self.model(data)
-            loss = self.loss(output, label)
-
-            # backward
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+            # handling multiple modes in case of feature predictor for vscnn
+            if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+                # get data and prepare according to group
+                data = data.float()
+                label = label_and_group[0].long() # emotion label
+                group = label_and_group[1].long() # view angle group
+                loss = 0
+                # Train
+                for index in range(len(self.model.models)):
+                    # get index of specific group
+                    req_index = np.where(group == index)[0]
+                    if req_index.size > 0:
+                        # get data according to group
+                        group_data = data[req_index].to(self.cuda)
+                        group_label = label[req_index].to(self.cuda)
+                        # forward
+                        output = self.model.models[index](group_data)
+                        per_group_loss = self.loss(output, group_label)
+                        loss += per_group_loss
+                        # backward
+                        self.optimizer[index].zero_grad()
+                        per_group_loss.backward()
+                        self.optimizer[index].step()
+            else:
+                # get data
+                data = data.float().to(self.cuda)
+                label = label_and_group.long().to(self.cuda)
+                
+                output, _ = self.model(data)
+                loss = self.loss(output, label)
+                        
+                # backward
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
             # statistics
+            
             self.iter_info['loss'] = loss.data.item()
-            self.iter_info['lr'] = '{:.6f}'.format(self.lr)
+            self.iter_info['lr'] = self.lr
             loss_value.append(self.iter_info['loss'])
-            self.show_iter_info(mode='train')
             self.meta_info['iter'] += 1
+            self.show_iter_info(mode='train')
+
 
         self.epoch_info['mean_loss'] = np.mean(loss_value)
         self.show_epoch_info(mode='train')
-#        self.io.print_timer()
+        # self.io.print_timer()
         # for k in self.args.topk:
         #     self.calculate_topk(k, show=False)
         # if self.accuracy_updated:
@@ -160,24 +217,49 @@ class Trainer(object):
         result_frag = []
         label_frag = []
 
-        for data, label in loader:
-
-            # get data
-            data = data.float().to(self.cuda)
-            label = label.long().to(self.cuda)
-
-            # inference
-            with torch.no_grad():
-                output, _ = self.model(data)
-            result_frag.append(output.data.cpu().numpy())
-
-            # get loss
-            if evaluation:
-                loss = self.loss(output, label)
-                loss_value.append(loss.item())
-                label_frag.append(label.data.cpu().numpy())
+        for data, label_and_group in loader:
+            if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+                # get data and prepare according to group
+                data = data.float()
+                label = label_and_group[0].long() # emotion label
+                group = label_and_group[1].long() # view angle group
+                # inference
+                with torch.no_grad():
+                    for index in range(len(self.model.models)):
+                        # get index of specific group
+                        req_index = np.where(group == index)[0]
+                        if req_index.size > 0:
+                            # get data according to group
+                            group_data = data[req_index].to(self.cuda)
+                            group_label = label[req_index].to(self.cuda)
+                            # inference
+                            output = self.model.models[index](group_data)
+                            result_frag.append(output.data.cpu().numpy())
+            
+                            # get loss
+                            if evaluation:
+                                loss = self.loss(output, group_label)
+                                loss_value.append(loss.item())
+                                label_frag.append(group_label.data.cpu().numpy())
+                    
+            else:
+                # get data
+                data = data.float().to(self.cuda)
+                label = label_and_group.long().to(self.cuda)
+    
+                # inference
+                with torch.no_grad():
+                    output, _ = self.model(data)
+                result_frag.append(output.data.cpu().numpy())
+    
+                # get loss
+                if evaluation:
+                    loss = self.loss(output, label)
+                    loss_value.append(loss.item())
+                    label_frag.append(label.data.cpu().numpy())
 
         self.result = np.concatenate(result_frag)
+        
         if evaluation:
             self.label = np.concatenate(label_frag)
             self.epoch_info['mean_loss'] = np.mean(loss_value)

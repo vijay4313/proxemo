@@ -1,5 +1,5 @@
 MODE: 'train' # train/test/save_fearures
-OUTPUT_PATH: '../output/vscnn'
+OUTPUT_PATH: '../output/vscnn_vgp'
 EPOCHS: 500
 START_EPOCH: 0
 LOG_INTERVAL: 1
@@ -9,29 +9,28 @@ NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TPOK: [1]
-SAVE_FILE: '../output/vscnn/deepfeatures.h5'
+SAVE_FILE: '../output/vscnn_vgp/deepfeatures.h5'
 STEP: [0.5, 0.75, 0.875]
-LOG_INTERVAL: 1 # 100
 PAVI_LOG: True
 EVAL_INTERVAL: 10
-WORK_DIR: '../logs/vscnn'
+WORK_DIR: '../logs/vscnn_vgp'
 TERMINAL_LOG: True
 
 # Model parameters
 MODEL:
-  TYPE: 'vscnn'
+  TYPE: 'vscnn_view_group_predictor'
   OPTIMIZER: 
     TYPE: 'sgd'
     LR: 0.1
     WEIGHT_DECAY: 0.1
   LOSS: 'cross_entropy'
-  SNAPSHOT_PATH: '../output/vscnn'
+  SNAPSHOT_PATH: '../output/vscnn_vgp'
 
 # Data params
 DATA:
-  TYPE: ''  # Data name
-  COORDS: 3
+  TYPE: 'multi_view'
+  COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '../data/features.h5'
-  LABELS_FILE: '../data/labels.h5'
+  FEATURES_FILE: '../data/test/features_*.h5'
+  LABELS_FILE: '../data/test/labels_*.h5'
