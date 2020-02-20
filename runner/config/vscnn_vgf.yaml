@@ -25,7 +25,7 @@ MODEL:
     LR: 0.1
     WEIGHT_DECAY: 0.1
   LOSS: 'cross_entropy'
-  SNAPSHOT_PATH: '../output/vscnn_vgp'
+  SNAPSHOT_PATH: '../output/vscnn_vgf'
   SKCNN_LAYER_CHANNELS: [32, 64]
 
 # Data params
