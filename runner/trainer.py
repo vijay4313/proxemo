@@ -42,12 +42,18 @@ class Trainer(object):
         self.best_accuracy = np.zeros((1, np.max(self.args['TPOK'])))
         self.accuracy_updated = False
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
-        log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', now)
+        log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', args['MODEL']['TYPE'], now)
+        self.args['WORK_DIR'] = os.path.join(args['OUTPUT_PATH'], 'saved_models', args['MODEL']['TYPE'], now)
         self.logger = SummaryWriter(log_dir=log_dir)
         self.cuda = args['CUDA_DEVICE'] if args['CUDA_DEVICE'] is not None else 0
         self.graph_dict = graph_dict
         self.TERMINAL_LOG = args['TERMINAL_LOG']
+        self.create_working_dir(self.args['WORK_DIR'])
         self.build_model(model_kwargs)
+    
+    def create_working_dir(self, dir_name):
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
 
     def build_model(self, model_kwargs):
         # model parameters
@@ -72,7 +78,7 @@ class Trainer(object):
         self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](*params)
         self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
         self.step_epochs = np.array([
-            math.ceil(float(self.args['EPOCHS'] / x)) for x in self.args['STEP']])
+            math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])
             
         # optimizer
         optimizer_args = self.args['MODEL']['OPTIMIZER']
@@ -177,7 +183,7 @@ class Trainer(object):
                         loss += per_group_loss
                         # backward
                         self.optimizer[index].zero_grad()
-                        per_group_loss.backward()
+                        per_group_loss.backward(retain_graph=True)
                         self.optimizer[index].step()
             else:
                 # get data
@@ -189,7 +195,7 @@ class Trainer(object):
                         
                 # backward
                 self.optimizer.zero_grad()
-                loss.backward()
+                loss.backward(retain_graph=True)
                 self.optimizer.step()
 
             # statistics
@@ -284,12 +290,21 @@ class Trainer(object):
 
             # save model and weights
             if self.accuracy_updated:
-                torch.save(self.model.state_dict(),
-                           os.path.join(self.args['WORK_DIR'],
-                                        'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
+                if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+                    for idx in range(len(self.model.models)):
+                        torch.save(self.model.models[idx].state_dict(),
+                            os.path.join(self.args['WORK_DIR'], 
+                                            'mdl{}_epoch{}_acc{:.2f}_model.pth.tar'.format(idx, epoch, self.best_accuracy.item())))
+                else:
+                    torch.save(self.model.state_dict(),
+                            os.path.join(self.args['WORK_DIR'],
+                                            'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
+
                 if self.epoch_info['mean_loss'] < self.best_loss:
-                    self.best_loss = self.epoch_info['mean_loss']
-                    self.best_epoch = epoch
+                        self.best_loss = self.epoch_info['mean_loss']
+                        self.best_epoch = epoch
+        
+        print('best epoch: {}'.format(self.best_epoch))
 
     def test(self):
 

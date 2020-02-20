@@ -2,7 +2,7 @@ MODE: 'train' # train/test/save_fearures
 OUTPUT_PATH: '../output/vscnn_vgf'
 EPOCHS: 2000
 START_EPOCH: 0
-LOG_INTERVAL: 1
+LOG_INTERVAL: 10
 CUDA_DEVICE: 0 #'cuda0'
 BATCH_SIZE: 32
 NUM_WORKERS: 4
@@ -10,22 +10,21 @@ SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TPOK: [1]
 SAVE_FILE: '../output/vscnn_vgf/deepfeatures.h5'
-STEP: [0.5, 0.75, 0.875]
+STEP: [0.5, 0.75, 0.875, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.6]
 PAVI_LOG: True
 EVAL_INTERVAL: 10
-WORK_DIR: '../logs/vscnn_vgf'
 TERMINAL_LOG: True
 
 # Model parameters
 MODEL:
   TYPE: 'vscnn_view_group_feature'
-  DROPOUT: 0.5
+  DROPOUT: 0.2
   OPTIMIZER: 
-    TYPE: 'sgd'
-    LR: 0.1
-    WEIGHT_DECAY: 0.1
+    TYPE: 'adam'
+    LR: 0.00001
+    WEIGHT_DECAY: 0.00001
   LOSS: 'cross_entropy'
-  SNAPSHOT_PATH: '../output/vscnn_vgp'
+  SNAPSHOT_PATH: '../output/vscnn_vgf'
   SKCNN_LAYER_CHANNELS: [32, 64]
 
 # Data params
@@ -34,5 +33,5 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '../data/test/features_*.h5'
-  LABELS_FILE: '../data/test/labels_*.h5'
+  FEATURES_FILE: '../data/AugDataset_340_200cm/features_*.h5'
+  LABELS_FILE: '../data/AugDataset_340_200cm/labels_*.h5'
