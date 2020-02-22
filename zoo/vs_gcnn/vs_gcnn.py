@@ -90,6 +90,7 @@ class VSGCNN(nn.Module):
 
         if apply_sfmax:
             final_layers = self.softmax(final_layers.view(*final_layers.size()[:2], -1))
+            final_layers = final_layers.squeeze(1)
 
         return final_layers
 

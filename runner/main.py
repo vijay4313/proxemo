@@ -7,24 +7,16 @@ import numpy as np
 import torch
 import torchlight
 
-
 from loader import loader
 from trainer import Trainer
 from utils import yaml_parser
 
-# base_path = os.path.dirname(os.path.realpath(__file__))
-# data_path = os.path.join(base_path, '../data')
-# ftype = 'Combined2'
-# coords = 3
-# joints = 16
-# cycles = 1
-# model_path = os.path.join(base_path, 'model_classifier_stgcn/features'+ftype)
 
 # python main.py --settings stgcn
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vscnn_vgf', metavar='s',
+parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 args = yaml_parser.yaml_parser(cli_args.settings)

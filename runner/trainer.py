@@ -41,7 +41,7 @@ class Trainer(object):
         self.meta_info = dict(epoch=0, iter=0)
         self.best_loss = math.inf
         self.best_epoch = None
-        self.best_accuracy = np.zeros((1, np.max(self.args['TPOK'])))
+        self.best_accuracy = np.zeros((1, np.max(self.args['TOPK'])))
         self.accuracy_updated = False
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
         log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', args['MODEL']['TYPE'], now)
@@ -64,7 +64,7 @@ class Trainer(object):
                       self.num_classes,
                       model_kwargs['NUM_GROUPS'],
                       self.args['MODEL']['DROPOUT'],
-                      self.args['MODEL']['SKCNN_LAYER_CHANNELS']
+                      self.args['MODEL']['LAYER_CHANNELS']
                       ]
         elif self.args['MODEL']['TYPE'] == 'vscnn_vgp':
             params = [self.args['DATA']['COORDS'],
@@ -75,7 +75,7 @@ class Trainer(object):
                       self.args['DATA']['COORDS'],
                       model_kwargs['NUM_GROUPS'],
                       self.args['MODEL']['DROPOUT'],
-                      self.args['MODEL']['SKCNN_LAYER_CHANNELS']
+                      self.args['MODEL']['LAYER_CHANNELS']
                       ]
         elif self.args['MODEL']['TYPE'] == 'stgcn':
             params = [self.args['DATA']['COORDS'],
@@ -89,8 +89,7 @@ class Trainer(object):
         # model
         self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](*params)
         self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
-        self.step_epochs = np.array([if len(self.args['MODEL']['TARGETS']) > 1:
-            math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])
+        self.step_epochs = np.array([math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])
             
         # optimizer
         optimizer_args = self.args['MODEL']['OPTIMIZER']
@@ -164,7 +163,7 @@ class Trainer(object):
             self.accuracy_updated = False
         print('\tTop{}: {:.2f}%. Best so far: {:.2f}%.'.format(
             k, accuracy, self.best_accuracy[0, k-1]))
-        self.logger.add_scalar('train-Iter-accuracy',
+        self.logger.add_scalar('test-Iter-accuracy',
                                accuracy,
                                 self.meta_info['epoch'])
 
@@ -206,11 +205,11 @@ class Trainer(object):
                 if len(self.args['MODEL']['TARGETS']) > 1:
                     label = label_and_group[0].long() # emotion label
                     group = label_and_group[1].long() # view angle group
-                    label = self.num_classes*label + group
+                    label = (self.num_classes*label + group).to(self.cuda)
                 else:
                     label = label_and_group.long().to(self.cuda)
                 
-                output, _ = self.model(data)
+                output = self.model(data)
                 loss = self.loss(output, label)
                         
                 # backward
@@ -271,11 +270,16 @@ class Trainer(object):
             else:
                 # get data
                 data = data.float().to(self.cuda)
-                label = label_and_group.long().to(self.cuda)
+                if len(self.args['MODEL']['TARGETS']) > 1:
+                    label = label_and_group[0].long() # emotion label
+                    group = label_and_group[1].long() # view angle group
+                    label = (self.num_classes*label + group).to(self.cuda)
+                else:
+                    label = label_and_group.long().to(self.cuda)
     
                 # inference
                 with torch.no_grad():
-                    output, _ = self.model(data)
+                    output = self.model(data)
                 result_frag.append(output.data.cpu().numpy())
     
                 # get loss
@@ -292,7 +296,7 @@ class Trainer(object):
             self.show_epoch_info(mode='test')
 
             # show top-k accuracy
-            for k in self.args['TPOK']:
+            for k in self.args['TOPK']:
                 self.show_topk(k)
 
     def train(self):

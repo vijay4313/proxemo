@@ -8,8 +8,7 @@ BATCH_SIZE: 32
 NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
-TPOK: [1]
-# SAVE_FILE: '../output/vscnn_vgf/deepfeatures.h5'
+TOPK: [1]
 STEP: [0.5, 0.75, 0.875, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.6]
 EVAL_INTERVAL: 10
 TERMINAL_LOG: True
@@ -24,7 +23,7 @@ MODEL:
     WEIGHT_DECAY: 0.00001
   LOSS: 'cross_entropy'
   TARGETS: ['emotion_classes']
-  SKCNN_LAYER_CHANNELS: [32, 64]
+  LAYER_CHANNELS: [32, 64]
 
 # Data params
 DATA:
@@ -32,5 +31,5 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '../data/AugDataset_340_200cm/features_*.h5'
-  LABELS_FILE: '../data/AugDataset_340_200cm/labels_*.h5'
+  FEATURES_FILE: '../data/test/features_*.h5'
+  LABELS_FILE: '../data/test/labels_*.h5'

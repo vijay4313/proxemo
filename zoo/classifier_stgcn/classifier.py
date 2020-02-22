@@ -81,12 +81,12 @@ class Classifier(nn.Module):
         # global pooling
         x = F.avg_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1, 1, 1).mean(dim=1)
-        f = x.squeeze()
+#        f = x.squeeze()
 
         # prediction
         x = self.fcn(x)
         x = x.view(x.size(0), -1)
-        return x, f
+        return x
 
     def extract_feature(self, x):
 
@@ -104,13 +104,14 @@ class Classifier(nn.Module):
             x, _ = gcn(x, self.A * importance)
 
         _, c, t, v = x.size()
-        feature = x.view(N, M, c, t, v).permute(0, 2, 3, 4, 1)
+#        feature = x.view(N, M, c, t, v).permute(0, 2, 3, 4, 1)
 
         # prediction
         x = self.fcn(x)
         output = x.view(N, M, -1, t, v).permute(0, 2, 3, 4, 1)
 
-        return output, feature
+#        return output, feature
+        return output
 
 
 class st_gcn(nn.Module):
