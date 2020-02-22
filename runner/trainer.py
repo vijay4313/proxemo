@@ -150,8 +150,11 @@ class Trainer(object):
             self.accuracy_updated = True
         else:
             self.accuracy_updated = False
-#        self.io.print_log('\tTop{}: {:.2f}%. Best so far: {:.2f}%.'.format(
-#            k, accuracy, self.best_accuracy[0, k-1]))
+        print('\tTop{}: {:.2f}%. Best so far: {:.2f}%.'.format(
+            k, accuracy, self.best_accuracy[0, k-1]))
+        self.logger.add_scalar('train-Iter-accuracy',
+                               accuracy,
+                                self.meta_info['epoch'])
 
     def per_train(self):
 
