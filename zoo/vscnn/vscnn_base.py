@@ -42,17 +42,12 @@ class ViewGroupPredictor(nn.Module):
 
     def forward(self, input_tensor):
         # convert [N, H, W, C] to [N, C, H, W]
-        input_tensor_reshaped = torch.empty((input_tensor.shape[0],
-                                             input_tensor.shape[3],
-                                             input_tensor.shape[1],
-                                             input_tensor.shape[2]), device = input_tensor.device)
-        input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
-        input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
-        input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
+        if input_tensor.size(1) != self.in_channels:
+            input_tensor = input_tensor.permute(0, 3, 2, 1)
         
         # forward pass
-        conv_out = self.conv_layers(input_tensor_reshaped)
-        conv_out = conv_out.view((input_tensor_reshaped.shape[0],-1))
+        conv_out = self.conv_layers(input_tensor)
+        conv_out = conv_out.view((input_tensor.shape[0],-1))
         final_out = self.final_layers(conv_out)
 
         return final_out, None
@@ -119,16 +114,12 @@ class SkCnn(nn.Module):
     def forward(self, input_tensor):
         
         # convert [N, H, W, C] to [N, C, H, W]
-        input_tensor_reshaped = torch.empty((input_tensor.shape[0],
-                                             input_tensor.shape[3],
-                                             input_tensor.shape[1],
-                                             input_tensor.shape[2]), device = input_tensor.device)
-        input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
-        input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
-        input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
-        first_conv = self.conv_stage_1(input_tensor_reshaped)
+        if input_tensor.size(1) != self.in_channels:
+            input_tensor = input_tensor.permute(0, 3, 2, 1)
+        
+        first_conv = self.conv_stage_1(input_tensor)
         second_conv = self.conv_stage_2(first_conv)
-        second_conv = second_conv.view((input_tensor_reshaped.shape[0],-1))
+        second_conv = second_conv.view((input_tensor.shape[0],-1))
         final = self.final_layers(second_conv)
 
         return final
