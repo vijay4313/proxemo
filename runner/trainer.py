@@ -16,11 +16,13 @@ from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
 from zoo.classifier_stgcn.classifier import Classifier
 from zoo.vscnn.vscnn_base import ViewGroupPredictor
 from zoo.vscnn.vscnn_base import ViewGroupFeature
+from zoo.vs_gcnn.vs_gcnn import VSGCNN
 
 MODEL_TYPE = {
     'stgcn': Classifier,
-    'vscnn_view_group_predictor': ViewGroupPredictor,
-    'vscnn_view_group_feature': ViewGroupFeature
+    'vscnn_vgp': ViewGroupPredictor,
+    'vscnn_vgf': ViewGroupFeature,
+    'vs_gcnn': VSGCNN
 }
 
 class Trainer(object):
@@ -57,27 +59,37 @@ class Trainer(object):
 
     def build_model(self, model_kwargs):
         # model parameters
-        if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
             params = [self.args['DATA']['COORDS'],
                       self.num_classes,
                       model_kwargs['NUM_GROUPS'],
                       self.args['MODEL']['DROPOUT'],
                       self.args['MODEL']['SKCNN_LAYER_CHANNELS']
                       ]
-        elif self.args['MODEL']['TYPE'] == 'vscnn_view_group_predictor':
+        elif self.args['MODEL']['TYPE'] == 'vscnn_vgp':
             params = [self.args['DATA']['COORDS'],
                       self.num_classes
                       ]
-        else:
+        elif self.args['MODEL']['TYPE'] == 'vs_gcnn':
+            params = [self.num_classes,
+                      self.args['DATA']['COORDS'],
+                      model_kwargs['NUM_GROUPS'],
+                      self.args['MODEL']['DROPOUT'],
+                      self.args['MODEL']['SKCNN_LAYER_CHANNELS']
+                      ]
+        elif self.args['MODEL']['TYPE'] == 'stgcn':
             params = [self.args['DATA']['COORDS'],
                       self.num_classes,
                       self.graph_dict
                       ]
+        else:
+            raise ValueError("Invalid Model. Model Type should be \
+                one of %s" % ', '.join(MODEL_TYPE.keys()))
 
         # model
         self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](*params)
         self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
-        self.step_epochs = np.array([
+        self.step_epochs = np.array([if len(self.args['MODEL']['TARGETS']) > 1:
             math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])
             
         # optimizer
@@ -85,7 +97,7 @@ class Trainer(object):
         self.lr = optimizer_args['LR']
         
         # handling multiple modes in case of feature predictor for vscnn
-        if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
             self.optimizer = []
             for model in self.model.models:
                 model.apply(weights_init)
@@ -166,7 +178,7 @@ class Trainer(object):
         for data, label_and_group in loader:
             # forward
             # handling multiple modes in case of feature predictor for vscnn
-            if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+            if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
                 # get data and prepare according to group
                 data = data.float()
                 label = label_and_group[0].long() # emotion label
@@ -191,7 +203,12 @@ class Trainer(object):
             else:
                 # get data
                 data = data.float().to(self.cuda)
-                label = label_and_group.long().to(self.cuda)
+                if len(self.args['MODEL']['TARGETS']) > 1:
+                    label = label_and_group[0].long() # emotion label
+                    group = label_and_group[1].long() # view angle group
+                    label = self.num_classes*label + group
+                else:
+                    label = label_and_group.long().to(self.cuda)
                 
                 output, _ = self.model(data)
                 loss = self.loss(output, label)
@@ -227,7 +244,7 @@ class Trainer(object):
         label_frag = []
 
         for data, label_and_group in loader:
-            if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+            if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
                 # get data and prepare according to group
                 data = data.float()
                 label = label_and_group[0].long() # emotion label
@@ -293,7 +310,7 @@ class Trainer(object):
 
             # save model and weights
             if self.accuracy_updated:
-                if self.args['MODEL']['TYPE'] == 'vscnn_view_group_feature':
+                if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
                     for idx in range(len(self.model.models)):
                         torch.save(self.model.models[idx].state_dict(),
                             os.path.join(self.args['WORK_DIR'], 
@@ -324,33 +341,33 @@ class Trainer(object):
                     self.result))
             self.io.save_pkl(result_dict, 'test_result.pkl')
 
-    def save_best_feature(self, _features_file, _save_file, data, joints, coords):
-        if self.best_epoch is None:
-            self.best_epoch, best_accuracy = get_best_epoch_and_accuracy(
-                self.args['WORK_DIR'])
-        else:
-            best_accuracy = self.best_accuracy.item()
-        filename = os.path.join(self.args['WORK_DIR'],
-                                'epoch{}_acc{:.2f}_model.pth.tar'.format(self.best_epoch, best_accuracy))
-        self.model.load_state_dict(torch.load(filename))
-        features = np.empty((0, 256))
-        fCombined = h5py.File(_features_file, 'r')
-        fkeys = fCombined.keys()
-        dfCombined = h5py.File(_save_file, 'w')
-        for i, (each_data, each_key) in enumerate(zip(data, fkeys)):
+    # def save_best_feature(self, _features_file, _save_file, data, joints, coords):
+    #     if self.best_epoch is None:
+    #         self.best_epoch, best_accuracy = get_best_epoch_and_accuracy(
+    #             self.args['WORK_DIR'])
+    #     else:
+    #         best_accuracy = self.best_accuracy.item()
+    #     filename = os.path.join(self.args['WORK_DIR'],
+    #                             'epoch{}_acc{:.2f}_model.pth.tar'.format(self.best_epoch, best_accuracy))
+    #     self.model.load_state_dict(torch.load(filename))
+    #     features = np.empty((0, 256))
+    #     fCombined = h5py.File(_features_file, 'r')
+    #     fkeys = fCombined.keys()
+    #     dfCombined = h5py.File(_save_file, 'w')
+    #     for i, (each_data, each_key) in enumerate(zip(data, fkeys)):
 
-            # get data
-            each_data = np.reshape(
-                each_data, (1, each_data.shape[0], joints, coords, 1))
-            each_data = np.moveaxis(each_data, [1, 2, 3], [2, 3, 1])
-            each_data = torch.from_numpy(each_data).float().to(self.cuda)
+    #         # get data
+    #         each_data = np.reshape(
+    #             each_data, (1, each_data.shape[0], joints, coords, 1))
+    #         each_data = np.moveaxis(each_data, [1, 2, 3], [2, 3, 1])
+    #         each_data = torch.from_numpy(each_data).float().to(self.cuda)
 
-            # get feature
-            with torch.no_grad():
-                _, feature = self.model(each_data)
-                fname = [each_key][0]
-                dfCombined.create_dataset(fname, data=feature.cpu())
-                features = np.append(features, np.array(
-                    feature.cpu()).reshape((1, feature.shape[0])), axis=0)
-        dfCombined.close()
-        return features
+    #         # get feature
+    #         with torch.no_grad():
+    #             _, feature = self.model(each_data)
+    #             fname = [each_key][0]
+    #             dfCombined.create_dataset(fname, data=feature.cpu())
+    #             features = np.append(features, np.array(
+    #                 feature.cpu()).reshape((1, feature.shape[0])), axis=0)
+    #     dfCombined.close()
+    #     return features

@@ -16,15 +16,15 @@ TERMINAL_LOG: True
 
 # Model parameters
 MODEL:
-  TYPE: 'vscnn_vgp'
+  TYPE: 'vs_gcnn'
   DROPOUT: 0.2
   OPTIMIZER: 
     TYPE: 'adam'
     LR: 0.00001
     WEIGHT_DECAY: 0.00001
   LOSS: 'cross_entropy'
-  TARGETS: ['emotion_classes']
-  SKCNN_LAYER_CHANNELS: [32, 64]
+  TARGETS: ['emotion_classes', 'groups']
+  SKCNN_LAYER_CHANNELS: [32, 64, 16]
 
 # Data params
 DATA:

@@ -83,7 +83,7 @@ if model_args['TYPE'] == 'stgcn':
             num_workers=args['NUM_WORKERS'],
             drop_last=True)}
             
-if model_args['TYPE'] == 'vscnn_view_group_predictor':
+if model_args['TYPE'] == 'vscnn_vgp':
     num_classes = num_classes_angles
     model_kwargs = {}
     print(f"---> num classes : {num_classes}")
@@ -107,7 +107,7 @@ if model_args['TYPE'] == 'vscnn_view_group_predictor':
             num_workers=args['NUM_WORKERS'],
             drop_last=True)}
             
-if model_args['TYPE'] == 'vscnn_view_group_feature':
+if model_args['TYPE'] in ['vscnn_vgf', 'vs_gcnn']:
     num_classes = num_classes_label
     model_kwargs = {'NUM_GROUPS' : num_classes_angles}
     print(f"---> num classes : {num_classes}")

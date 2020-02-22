@@ -1,5 +1,5 @@
 MODE: 'train' # train/test/save_fearures
-OUTPUT_PATH: '../output/vscnn_vgf'
+OUTPUT_PATH: '../output'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 10
@@ -9,22 +9,21 @@ NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TPOK: [1]
-SAVE_FILE: '../output/vscnn_vgf/deepfeatures.h5'
+# SAVE_FILE: '../output/vscnn_vgf/deepfeatures.h5'
 STEP: [0.5, 0.75, 0.875, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.6]
-PAVI_LOG: True
 EVAL_INTERVAL: 10
 TERMINAL_LOG: True
 
 # Model parameters
 MODEL:
-  TYPE: 'vscnn_view_group_feature'
+  TYPE: 'vscnn_vgf'
   DROPOUT: 0.2
   OPTIMIZER: 
     TYPE: 'adam'
     LR: 0.00001
     WEIGHT_DECAY: 0.00001
   LOSS: 'cross_entropy'
-  SNAPSHOT_PATH: '../output/vscnn_vgf'
+  TARGETS: ['emotion_classes']
   SKCNN_LAYER_CHANNELS: [32, 64]
 
 # Data params
