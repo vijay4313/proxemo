@@ -31,5 +31,5 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '../data/test/features_*.h5'
-  LABELS_FILE: '../data/test/labels_*.h5'
+  FEATURES_FILE: '../data/test*/features_*.h5'
+  LABELS_FILE: '../data/test*/labels_*.h5'

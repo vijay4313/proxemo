@@ -47,8 +47,8 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3):
     feature_files.sort()
     label_files.sort()
     
-    angle_regx_str = _path_features.replace('*', '(\d*)')
-    angle_regx = re.compile(angle_regx_str)
+    angle_regex = re.compile('(\d*).h5')
+    folder_regex = re.compile('(\w*)\/')
     
     all_data_train = []
     all_data_test = []
@@ -60,8 +60,9 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3):
     for feature_file, label_file in zip(feature_files, label_files):
         ff = h5py.File(feature_file, 'r')
         fl = h5py.File(label_file, 'r')
-        angle = int(angle_regx.search(feature_file).group(1))
-        print(f"--->> processing - {angle}")
+        angle = int(angle_regex.search(feature_file).group(1))
+        folder = folder_regex.findall(feature_file)[-1]
+        print(f"--->> processing - {folder} - {angle}")
         
         data_list = []
         num_samples = len(ff.keys())
