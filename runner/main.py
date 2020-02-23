@@ -16,12 +16,19 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
+parser.add_argument('--settings', type=str, default='vs_gcnn', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
+print(f'---> Settings file - {cli_args.settings}')
 args = yaml_parser.yaml_parser(cli_args.settings)
 model_args = args['MODEL']
 data_args = args["DATA"]
+args['YAML_FILE_NAME'] = cli_args.settings
+
+if args['MODE'] == 'train':
+    test_size = 0.1
+else:
+    test_size = 1.0
 
 # Load datasets
 if data_args['TYPE'] == 'single_view':
@@ -30,7 +37,8 @@ if data_args['TYPE'] == 'single_view':
                          data_args['LABELS_FILE'],
                          data_args['COORDS'],
                          data_args['JOINTS'],
-                         cycles=data_args['CYCLES'])
+                         cycles=data_args['CYCLES'],
+                         test_size = test_size)
     num_classes_label = np.unique(labels_train).shape[0]
 
 # Load datasets multiview
@@ -44,7 +52,8 @@ if data_args['TYPE'] == 'multi_view':
                                    data_args['LABELS_FILE'],
                                    data_args['COORDS'],
                                    data_args['JOINTS'],
-                                   cycles=data_args['CYCLES'])
+                                   cycles=data_args['CYCLES'],
+                                   test_size = test_size)
         
     # convert to view group (4 view groups)
     angles_train = list((np.asarray(angles_train)/90).astype(int))
@@ -56,7 +65,7 @@ if data_args['TYPE'] == 'multi_view':
 
 # Convert datasets to Pytorch data and model specific parameters
 
-if model_args['TYPE'] == 'stgcn':
+if model_args['TYPE'] in ['stgcn', 'vscnn']:
     num_classes = num_classes_label
     model_kwargs = {}
     data_loader_train_test = {
@@ -126,15 +135,29 @@ if model_args['TYPE'] in ['vscnn_vgf', 'vs_gcnn']:
 graph_dict = {'strategy': 'spatial'}
 
 # Build model
-model = Trainer(args, data_loader_train_test,
-                num_classes, graph_dict, model_kwargs)
+if model_args['TYPE'] == 'vscnn':
+    model_vgp = Trainer(args, data_loader_train_test,
+                        num_classes, graph_dict, model_kwargs)
+    model_vgf = Trainer(args, data_loader_train_test,
+                        num_classes, graph_dict, model_kwargs)
+else:
+    model = Trainer(args, data_loader_train_test,
+                    num_classes, graph_dict, model_kwargs)
 
 # Run train/test loop
 if args['MODE'] == 'train':
+    if args['WARM_START']:
+        model.warm_start()
     model.train()
-if args['SAVE_FEATURES']:
-    f = model.save_best_feature(data_args['FEATURES_FILE'],
-                                args['SAVE_FILE'],
-                                data,
-                                data_args['JOINTS'],
-                                data_args['COORDS'])
+if args['MODE'] == 'test':
+    if model_args['TYPE'] == 'vscnn':
+        pass
+    else:
+        model.load_model()
+        model.test()
+#if args['SAVE_FEATURES']:
+#    f = model.save_best_feature(data_args['FEATURES_FILE'],
+#                                args['SAVE_FILE'],
+#                                data,
+#                                data_args['JOINTS'],
+#                                data_args['COORDS'])

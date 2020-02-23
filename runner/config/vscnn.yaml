@@ -16,7 +16,7 @@ WARM_START: False
 
 # Model parameters
 MODEL:
-  TYPE: 'vscnn_vgf'
+  TYPE: 'vscnn'
   DROPOUT: 0.2
   OPTIMIZER: 
     TYPE: 'adam'

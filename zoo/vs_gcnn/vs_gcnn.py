@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 import torch
 import torch.nn as nn
+import torchsummary as summary
 
 import numpy as np
 
@@ -22,13 +23,16 @@ class VSGCNN(nn.Module):
         return name
 
     def build_net(self):
-        conv1_1 = nn.Conv2d(self.in_channels,
+        conv1_0 = nn.Conv2d(self.in_channels,
+                            self.layer_channels[0],
+                            (3, 3))
+        conv1_1 = nn.Conv2d(self.layer_channels[0],
                             self.layer_channels[0]*self.n_groups,
                             (3, 3))
         conv1_2 = nn.Conv2d(self.layer_channels[0]*self.n_groups,
                              self.layer_channels[0]*self.n_groups,
                              (3, 3), groups=self.n_groups)
-        bn1 = nn.GroupNorm(self.n_groups, self.layer_channels[0]*self.n_groups)
+        bn1 = nn.BatchNorm2d(self.layer_channels[0]*self.n_groups)
 
         conv2_1 = nn.Conv2d(self.layer_channels[0]*self.n_groups,
                             self.layer_channels[1]*self.n_groups,
@@ -37,13 +41,15 @@ class VSGCNN(nn.Module):
         conv2_2= nn.Conv2d(self.layer_channels[1]*self.n_groups,
                             self.layer_channels[1]*self.n_groups,
                             (3, 3), groups=self.n_groups)
-        bn2 = nn.GroupNorm(self.n_groups, self.layer_channels[1]*self.n_groups)
+        bn2 = nn.BatchNorm2d(self.layer_channels[1]*self.n_groups)
 
         max_pool = nn.MaxPool2d((3, 3), (2, 2))
 
         dropout = nn.Dropout(self.dropout)
 
         self.conv_stage_1 = nn.Sequential(OrderedDict([
+            (self._gen_layer_name(1, 'conv', 0), conv1_0),
+            (self._gen_layer_name(1, 'relu', 0),nn.ReLU()),
             (self._gen_layer_name(1, 'conv', 1), conv1_1),
             (self._gen_layer_name(1, 'relu', 1), nn.ReLU()),
             (self._gen_layer_name(1, 'maxpool', 1), max_pool),
@@ -99,4 +105,5 @@ if __name__ == "__main__":
     vgcnn = VSGCNN(4, 3, 4, 0.2)
     image = torch.rand(1, 3, 244, 244)
     a = vgcnn(image)
+    print(sum([param.nelement() for param in vgcnn.parameters()]))
     print(a.data)

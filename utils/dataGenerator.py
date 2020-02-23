@@ -59,9 +59,9 @@ if __name__ == "__main__":
 #    pts, label = readDataSingleGait("../data", "", 3, 16, 1)
     angles = range(0,360,5)
     generateDataSet("../data",
-                    "",
-                    "../data/AugDataset_340_300cm",
-                    3, 16, 1, angles, 300)
+                    "_ELMD",
+                    "../data/AugDataset_ELMD_0cm",
+                    3, 16, 1, angles, 0)
     
 
 

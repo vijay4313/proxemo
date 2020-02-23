@@ -2,7 +2,7 @@ import math
 import os
 
 from datetime import datetime
-
+import pickle
 import h5py
 import numpy as np
 import torch
@@ -17,6 +17,8 @@ from zoo.classifier_stgcn.classifier import Classifier
 from zoo.vscnn.vscnn_base import ViewGroupPredictor
 from zoo.vscnn.vscnn_base import ViewGroupFeature
 from zoo.vs_gcnn.vs_gcnn import VSGCNN
+
+from utils import yaml_parser
 
 MODEL_TYPE = {
     'stgcn': Classifier,
@@ -46,11 +48,14 @@ class Trainer(object):
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
         log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', args['MODEL']['TYPE'], now)
         self.args['WORK_DIR'] = os.path.join(args['OUTPUT_PATH'], 'saved_models', args['MODEL']['TYPE'], now)
+        self.args['RESULT_SAVE_DIR'] = os.path.join(args['OUTPUT_PATH'], 'test_result', args['MODEL']['TYPE'], now)
         self.logger = SummaryWriter(log_dir=log_dir)
         self.cuda = args['CUDA_DEVICE'] if args['CUDA_DEVICE'] is not None else 0
         self.graph_dict = graph_dict
         self.TERMINAL_LOG = args['TERMINAL_LOG']
         self.create_working_dir(self.args['WORK_DIR'])
+        self.create_working_dir(self.args['RESULT_SAVE_DIR'])
+        yaml_parser.copy_yaml(self.args['YAML_FILE_NAME'], self.args['WORK_DIR'])
         self.build_model(model_kwargs)
     
     def create_working_dir(self, dir_name):
@@ -178,6 +183,9 @@ class Trainer(object):
             # forward
             # handling multiple modes in case of feature predictor for vscnn
             if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+                # put model in training mode
+                for _model in self.model.models:
+                    _model.train()
                 # get data and prepare according to group
                 data = data.float()
                 label = label_and_group[0].long() # emotion label
@@ -244,6 +252,9 @@ class Trainer(object):
 
         for data, label_and_group in loader:
             if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+                # put models in eval mode
+                for _model in self.model.models:
+                    _model.eval()
                 # get data and prepare according to group
                 data = data.float()
                 label = label_and_group[0].long() # emotion label
@@ -331,19 +342,46 @@ class Trainer(object):
         print('best epoch: {}'.format(self.best_epoch))
 
     def test(self):
-
-        # the path of weights must be appointed
-        if self.args.weights is None:
-            raise ValueError('Please appoint --weights.')
-
         self.per_test()
-
-        # save the output of model
-        if self.args.save_result:
-            result_dict = dict(
-                zip(self.data_loader['test'].dataset.sample_name,
-                    self.result))
-            self.io.save_pkl(result_dict, 'test_result.pkl')
+#        file_name = self.args['DATA']['FEATURES_FILE'].replace('\/', '_')
+        file_name = 'test_result'
+        save_file = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'.pkl') 
+        result_dict = dict(zip(self.label,self.result))
+        with open(save_file, 'wb') as handle:
+            pickle.dump(result_dict, handle)
+            
+    def load_model(self):
+        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+            for idx in range(len(self.model.models)):
+                model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
+                                      self.args['TEST'][f'MODEL_NAME_{idx}'])
+                self.model.models[idx].load_state_dict(torch.load(model_path))
+                self.model.models[idx].eval()
+        else:
+            
+            model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
+                                      self.args['TEST']['MODEL_NAME'])
+            self.model.load_state_dict(torch.load(model_path))
+            self.model.eval()                    
+        
+    def warm_start(self):
+        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+            for idx in range(len(self.model.models)):
+                model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
+                                      self.args['TEST'][f'MODEL_NAME_{idx}'])
+                self.model.models[idx].load_state_dict(torch.load(model_path, map_location=self.cuda), 
+                                 strict=False)
+                self.model.models[idx].to(self.cuda)
+                self.model.models[idx].train()
+        else:
+            
+            model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
+                                      self.args['TEST']['MODEL_NAME'])
+            self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
+                                       strict=False)
+            self.model.to(self.cuda)
+            self.model.train()   
+        
 
     # def save_best_feature(self, _features_file, _save_file, data, joints, coords):
     #     if self.best_epoch is None:

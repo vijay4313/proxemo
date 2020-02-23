@@ -1,8 +1,8 @@
-MODE: 'train' # train/test/save_fearures
-OUTPUT_PATH: '../output'
-EPOCHS: 500
+MODE: 'test' # train/test
+OUTPUT_PATH: '../output/test'
+EPOCHS: 2000
 START_EPOCH: 0
-LOG_INTERVAL: 1
+LOG_INTERVAL: 100
 CUDA_DEVICE: 0 #'cuda0'
 BATCH_SIZE: 32
 NUM_WORKERS: 4
@@ -10,16 +10,16 @@ SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TOPK: [1]
 STEP: [0.5, 0.75, 0.875]
-PAVI_LOG: True
-EVAL_INTERVAL: 10
+EVAL_INTERVAL: 1
 TERMINAL_LOG: True
+WARM_START: False
 
 # Model parameters
 MODEL:
   TYPE: 'stgcn'
   OPTIMIZER: 
     TYPE: 'sgd'
-    LR: 0.1
+    LR: 0.001
     WEIGHT_DECAY: 0.1
   LOSS: 'cross_entropy'
   TARGETS: ['emotion_classes']
@@ -31,5 +31,10 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '../data/test*/features_*.h5'
-  LABELS_FILE: '../data/test*/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/test/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/test/labels_*.h5'
+  
+# Test / Inference
+TEST:
+  MODEL_FOLDER: '/home/emotiongroup/emotionGroup/emotion-bot/output/saved_models/stgcn/23-02-2020-00-55-10'
+  MODEL_NAME: 'epoch2_acc35.12_model.pth.tar'

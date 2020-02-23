@@ -6,6 +6,8 @@ data/*
 
 # output files
 output/*
+output_test/*
+output*
 
 # logs
 logs/*

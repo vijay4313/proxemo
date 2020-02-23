@@ -10,7 +10,7 @@ import re
 from sklearn.model_selection import train_test_split
 import torch
 
-def load_data(_path_features, _path_lables, coords, joints, cycles=3):
+def load_data(_path_features, _path_lables, coords, joints,cycles=3, test_size = 0.1):
     # file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
     # file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
     ff = h5py.File(_path_features, 'r')
@@ -39,10 +39,10 @@ def load_data(_path_features, _path_lables, coords, joints, cycles=3):
     
     return data, labels, data_train, labels_train, data_test, labels_test
 
-def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3):
+def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, test_size = 0.1):
     feature_files = glob.glob(_path_features)
     label_files = glob.glob(_path_lables)
-    
+    print(f'Number of files = {len(feature_files)}')
     # sorting files so that features and labels files match
     feature_files.sort()
     label_files.sort()

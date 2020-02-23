@@ -50,7 +50,7 @@ class ViewGroupPredictor(nn.Module):
         conv_out = conv_out.view((input_tensor.shape[0],-1))
         final_out = self.final_layers(conv_out)
 
-        return final_out, None
+        return final_out
 
 
 class SkCnn(nn.Module):
