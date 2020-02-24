@@ -36,11 +36,11 @@ class ViewGroupPredictor(nn.Module):
         self.final_layers = nn.Sequential(OrderedDict([
             (self._gen_layer_name('fc', 1), nn.Linear(453152, 128)),
             (self._gen_layer_name('relu'), nn.ReLU()),
-            (self._gen_layer_name('fc', 2), nn.Linear(128, self.num_classes)),
-            (self._gen_layer_name('softmax'), nn.Softmax())
+            (self._gen_layer_name('fc', 2), nn.Linear(128, self.num_classes))
         ]))
-
-    def forward(self, input_tensor):
+        
+        
+    def forward(self, input_tensor, apply_sfmax=False):
         # convert [N, H, W, C] to [N, C, H, W]
         if input_tensor.size(1) != self.in_channels:
             input_tensor = input_tensor.permute(0, 3, 2, 1)
@@ -49,6 +49,9 @@ class ViewGroupPredictor(nn.Module):
         conv_out = self.conv_layers(input_tensor)
         conv_out = conv_out.view((input_tensor.shape[0],-1))
         final_out = self.final_layers(conv_out)
+        
+        if apply_sfmax:
+            final_out = nn.softmax()(final_out)
 
         return final_out
 
@@ -107,11 +110,10 @@ class SkCnn(nn.Module):
         self.final_layers = nn.Sequential(OrderedDict([
             (self._gen_layer_name(3, 'fc', 1), nn.Linear(9216, 128)),
             (self._gen_layer_name(3, 'relu'), nn.ReLU()),
-            (self._gen_layer_name(3, 'fc', 2), nn.Linear(128, self.num_classes)),
-            (self._gen_layer_name(3, 'softmax'), nn.Softmax())
+            (self._gen_layer_name(3, 'fc', 2), nn.Linear(128, self.num_classes))
         ]))
 
-    def forward(self, input_tensor):
+    def forward(self, input_tensor, apply_sfmax=False):
         
         # convert [N, H, W, C] to [N, C, H, W]
         if input_tensor.size(1) != self.in_channels:
@@ -121,6 +123,9 @@ class SkCnn(nn.Module):
         second_conv = self.conv_stage_2(first_conv)
         second_conv = second_conv.view((input_tensor.shape[0],-1))
         final = self.final_layers(second_conv)
+        
+        if apply_sfmax:
+            final = nn.softmax()(final)
 
         return final
 

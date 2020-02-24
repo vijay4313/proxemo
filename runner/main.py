@@ -147,6 +147,7 @@ else:
 # Run train/test loop
 if args['MODE'] == 'train':
     if args['WARM_START']:
+        print('---> Warm Start')
         model.warm_start()
     model.train()
 if args['MODE'] == 'test':

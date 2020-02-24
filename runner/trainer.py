@@ -269,7 +269,7 @@ class Trainer(object):
                             group_data = data[req_index].to(self.cuda)
                             group_label = label[req_index].to(self.cuda)
                             # inference
-                            output = self.model.models[index](group_data)
+                            output = self.model.models[index](group_data, apply_sfmax = True)
                             result_frag.append(output.data.cpu().numpy())
             
                             # get loss
@@ -290,7 +290,7 @@ class Trainer(object):
     
                 # inference
                 with torch.no_grad():
-                    output = self.model(data)
+                    output = self.model(data, apply_sfmax = True)
                 result_frag.append(output.data.cpu().numpy())
     
                 # get loss
@@ -355,13 +355,15 @@ class Trainer(object):
             for idx in range(len(self.model.models)):
                 model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST'][f'MODEL_NAME_{idx}'])
-                self.model.models[idx].load_state_dict(torch.load(model_path))
+                self.model.models[idx].load_state_dict(torch.load(model_path, map_location=self.cuda), 
+                                 strict=True)
                 self.model.models[idx].eval()
         else:
             
             model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST']['MODEL_NAME'])
-            self.model.load_state_dict(torch.load(model_path))
+            self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
+                                       strict=True)
             self.model.eval()                    
         
     def warm_start(self):
@@ -370,7 +372,7 @@ class Trainer(object):
                 model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST'][f'MODEL_NAME_{idx}'])
                 self.model.models[idx].load_state_dict(torch.load(model_path, map_location=self.cuda), 
-                                 strict=False)
+                                 strict=True)
                 self.model.models[idx].to(self.cuda)
                 self.model.models[idx].train()
         else:
@@ -378,7 +380,7 @@ class Trainer(object):
             model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST']['MODEL_NAME'])
             self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
-                                       strict=False)
+                                       strict=True)
             self.model.to(self.cuda)
             self.model.train()   
         

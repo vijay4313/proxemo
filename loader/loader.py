@@ -35,14 +35,12 @@ def load_data(_path_features, _path_lables, coords, joints,cycles=3, test_size =
             data[si, time_steps * ci:time_steps * (ci + 1), :] = data_list_curr[0:time_steps]
     data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size=0.1)
     
-    print(f"--> {data.shape}")
-    
     return data, labels, data_train, labels_train, data_test, labels_test
 
 def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, test_size = 0.1):
     feature_files = glob.glob(_path_features)
     label_files = glob.glob(_path_lables)
-    print(f'Number of files = {len(feature_files)}')
+    print(f'---> Number of files = {len(feature_files)}')
     # sorting files so that features and labels files match
     feature_files.sort()
     label_files.sort()

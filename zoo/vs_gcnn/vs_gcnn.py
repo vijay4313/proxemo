@@ -85,7 +85,7 @@ class VSGCNN(nn.Module):
         ]))
         self.softmax = nn.Softmax(2)
 
-    def forward(self, input_tensor, apply_sfmax=True):
+    def forward(self, input_tensor, apply_sfmax=False):
 
         # convert [N, H, W, C] to [N, C, H, W]
         if input_tensor.size(1) != self.in_channels:
@@ -97,6 +97,8 @@ class VSGCNN(nn.Module):
         if apply_sfmax:
             final_layers = self.softmax(final_layers.view(*final_layers.size()[:2], -1))
             final_layers = final_layers.squeeze(1)
+        else:
+            final_layers = final_layers.view(*final_layers.size()[:2], -1).squeeze(1)
 
         return final_layers
 
