@@ -1,4 +1,4 @@
-MODE: 'test' # train/test
+MODE: 'train' # train/test/inference
 OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 155
@@ -38,4 +38,5 @@ DATA:
 # Test / Inference
 TEST:
   MODEL_FOLDER: '/scratch/emotiongroup/Run 3/saved models/vs_gcnn/23-02-2020-00-32-48'
+#  MODEL_NAME: 'epoch1_acc21.07_model.pth.tar'
   MODEL_NAME: 'epoch123_acc50.81_model.pth.tar'

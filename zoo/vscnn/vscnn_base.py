@@ -51,7 +51,7 @@ class ViewGroupPredictor(nn.Module):
         final_out = self.final_layers(conv_out)
         
         if apply_sfmax:
-            final_out = nn.softmax()(final_out)
+            final_out = nn.Softmax()(final_out)
 
         return final_out
 
@@ -125,7 +125,7 @@ class SkCnn(nn.Module):
         final = self.final_layers(second_conv)
         
         if apply_sfmax:
-            final = nn.softmax()(final)
+            final = nn.Softmax()(final)
 
         return final
 

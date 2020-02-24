@@ -1,4 +1,4 @@
-MODE: 'test' # train/test
+MODE: 'inference' # train/test
 OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0

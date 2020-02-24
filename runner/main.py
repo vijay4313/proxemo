@@ -9,6 +9,7 @@ import torchlight
 
 from loader import loader
 from trainer import Trainer
+from inference import Inference
 from utils import yaml_parser
 
 
@@ -16,7 +17,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vs_gcnn', metavar='s',
+parser.add_argument('--settings', type=str, default='vscnn_vgf', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 print(f'---> Settings file - {cli_args.settings}')
@@ -65,7 +66,7 @@ if data_args['TYPE'] == 'multi_view':
 
 # Convert datasets to Pytorch data and model specific parameters
 
-if model_args['TYPE'] in ['stgcn', 'vscnn']:
+if model_args['TYPE'] in ['stgcn']:
     num_classes = num_classes_label
     model_kwargs = {}
     data_loader_train_test = {
@@ -108,6 +109,30 @@ if model_args['TYPE'] == 'vscnn_vgp':
             num_workers=args['NUM_WORKERS'],
             drop_last=True)}
             
+if model_args['TYPE'] == 'vscnn':
+    num_classes = num_classes_label
+    model_kwargs = {'NUM_GROUPS' : num_classes_angles}
+    print(f"---> num classes : {num_classes}")
+    data_loader_train_test = {
+        "train": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_train, labels_train, 
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True),
+        "test": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_test, labels_test,
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True)}
+            
 if model_args['TYPE'] in ['vscnn_vgf', 'vs_gcnn']:
     num_classes = num_classes_label
     model_kwargs = {'NUM_GROUPS' : num_classes_angles}
@@ -135,30 +160,24 @@ if model_args['TYPE'] in ['vscnn_vgf', 'vs_gcnn']:
 graph_dict = {'strategy': 'spatial'}
 
 # Build model
-if model_args['TYPE'] == 'vscnn':
-    model_vgp = Trainer(args, data_loader_train_test,
-                        num_classes, graph_dict, model_kwargs)
-    model_vgf = Trainer(args, data_loader_train_test,
-                        num_classes, graph_dict, model_kwargs)
-else:
+if args['MODE'] in ['train', 'test']:
     model = Trainer(args, data_loader_train_test,
                     num_classes, graph_dict, model_kwargs)
 
 # Run train/test loop
 if args['MODE'] == 'train':
+    print("---> Train Mode")
     if args['WARM_START']:
         print('---> Warm Start')
         model.warm_start()
     model.train()
 if args['MODE'] == 'test':
-    if model_args['TYPE'] == 'vscnn':
-        pass
-    else:
-        model.load_model()
-        model.test()
-#if args['SAVE_FEATURES']:
-#    f = model.save_best_feature(data_args['FEATURES_FILE'],
-#                                args['SAVE_FILE'],
-#                                data,
-#                                data_args['JOINTS'],
-#                                data_args['COORDS'])
+    print("---> Test Mode")
+    model.load_model()
+    model.test()
+    
+if args['MODE'] == 'inference':
+    print("---> Inference Mode")
+    model = Inference(args, data_loader_train_test,
+                    num_classes, graph_dict, model_kwargs)
+    model.inference()

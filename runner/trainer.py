@@ -173,8 +173,13 @@ class Trainer(object):
                                 self.meta_info['epoch'])
 
     def per_train(self):
-
-        self.model.train()
+        # put model in training mode
+        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+            for _model in self.model.models:
+                _model.train()
+        else:
+            self.model.train()
+            
         self.adjust_lr()
         loader = self.data_loader['train']
         loss_value = []
@@ -183,9 +188,6 @@ class Trainer(object):
             # forward
             # handling multiple modes in case of feature predictor for vscnn
             if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-                # put model in training mode
-                for _model in self.model.models:
-                    _model.train()
                 # get data and prepare according to group
                 data = data.float()
                 label = label_and_group[0].long() # emotion label
@@ -243,8 +245,14 @@ class Trainer(object):
         # self.model.extract_feature()
 
     def per_test(self, evaluation=True):
-
-        self.model.eval()
+        # put models in eval mode
+        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+                # put models in eval mode
+                for _model in self.model.models:
+                    _model.eval()
+        else:
+            self.model.eval()
+            
         loader = self.data_loader['test']
         loss_value = []
         result_frag = []
@@ -252,9 +260,6 @@ class Trainer(object):
 
         for data, label_and_group in loader:
             if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-                # put models in eval mode
-                for _model in self.model.models:
-                    _model.eval()
                 # get data and prepare according to group
                 data = data.float()
                 label = label_and_group[0].long() # emotion label
@@ -343,7 +348,6 @@ class Trainer(object):
 
     def test(self):
         self.per_test()
-#        file_name = self.args['DATA']['FEATURES_FILE'].replace('\/', '_')
         file_name = 'test_result'
         save_file = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'.pkl') 
         result_dict = dict(zip(self.label,self.result))
@@ -355,7 +359,8 @@ class Trainer(object):
             for idx in range(len(self.model.models)):
                 model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST'][f'MODEL_NAME_{idx}'])
-                self.model.models[idx].load_state_dict(torch.load(model_path, map_location=self.cuda), 
+                self.model.models[idx].load_state_dict(torch.load(model_path, 
+                                 map_location=f'cuda:{self.cuda}'), 
                                  strict=True)
                 self.model.models[idx].eval()
         else:
@@ -371,7 +376,8 @@ class Trainer(object):
             for idx in range(len(self.model.models)):
                 model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST'][f'MODEL_NAME_{idx}'])
-                self.model.models[idx].load_state_dict(torch.load(model_path, map_location=self.cuda), 
+                self.model.models[idx].load_state_dict(torch.load(model_path, 
+                                 map_location=f'cuda:{self.cuda}'), 
                                  strict=True)
                 self.model.models[idx].to(self.cuda)
                 self.model.models[idx].train()

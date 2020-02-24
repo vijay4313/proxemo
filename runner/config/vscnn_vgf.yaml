@@ -1,4 +1,4 @@
-MODE: 'test' # train/test
+MODE: 'inference' # train/test
 OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
@@ -37,7 +37,7 @@ DATA:
   
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/Run 2/vscnn_vgf/saved_models/vscnn_view_group_feature/21-02-2020-12-06-23'
+  MODEL_FOLDER: '/scratch/emotiongroup/inference models'
   MODEL_NAME_0: 'mdl0_epoch179_acc98.00_model.pth.tar'
   MODEL_NAME_1: 'mdl1_epoch179_acc98.00_model.pth.tar'
   MODEL_NAME_2: 'mdl2_epoch179_acc98.00_model.pth.tar'
