@@ -32,16 +32,16 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/test/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/test/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/labels_*.h5'
   
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/inference models'
+  MODEL_FOLDER: '/scratch/emotiongroup/Run 4/saved_models/vscnn_vgf/23-02-2020-22-49-27'
   MODEL_NAME: 'vgp.pth.tar'
-  MODEL_NAME_0: 'mdl0_epoch179_acc98.00_model.pth.tar'
-  MODEL_NAME_1: 'mdl1_epoch179_acc98.00_model.pth.tar'
-  MODEL_NAME_2: 'mdl2_epoch179_acc98.00_model.pth.tar'
-  MODEL_NAME_3: 'mdl3_epoch179_acc98.00_model.pth.tar'
+  MODEL_NAME_0: 'mdl0_epoch37_acc100.00_model.pth.tar'
+  MODEL_NAME_1: 'mdl1_epoch37_acc100.00_model.pth.tar'
+  MODEL_NAME_2: 'mdl2_epoch37_acc100.00_model.pth.tar'
+  MODEL_NAME_3: 'mdl3_epoch37_acc100.00_model.pth.tar'
   
   

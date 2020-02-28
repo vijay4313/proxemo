@@ -63,7 +63,7 @@ class Classifier(nn.Module):
         # fcn for prediction
         self.fcn = nn.Conv2d(256, num_classes, kernel_size=1)
 
-    def forward(self, x):
+    def forward(self, x, apply_sfmax=False):
 
         # data normalization
         N, C, T, V, M = x.size()

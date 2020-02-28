@@ -1,8 +1,8 @@
-MODE: 'inference' # train/test
-OUTPUT_PATH: '../output_test'
+MODE: 'train' # train/test
+OUTPUT_PATH: '../output'
 EPOCHS: 2000
 START_EPOCH: 0
-LOG_INTERVAL: 10
+LOG_INTERVAL: 100
 CUDA_DEVICE: 0 #'cuda0'
 BATCH_SIZE: 32
 NUM_WORKERS: 4
@@ -10,7 +10,7 @@ SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TOPK: [1]
 STEP: [0.5, 0.75, 0.875, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.6]
-EVAL_INTERVAL: 10
+EVAL_INTERVAL: 1
 TERMINAL_LOG: True
 WARM_START: False
 
@@ -32,14 +32,14 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/test/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/test/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_340_*/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_340_*/labels_*.h5'
   
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/inference models'
-  MODEL_NAME_0: 'mdl0_epoch179_acc98.00_model.pth.tar'
-  MODEL_NAME_1: 'mdl1_epoch179_acc98.00_model.pth.tar'
-  MODEL_NAME_2: 'mdl2_epoch179_acc98.00_model.pth.tar'
-  MODEL_NAME_3: 'mdl3_epoch179_acc98.00_model.pth.tar'
+  MODEL_FOLDER: '/scratch/emotiongroup/Run 4/saved_models/vscnn_vgf/23-02-2020-22-49-27'
+  MODEL_NAME_0: 'mdl0_epoch37_acc100.00_model.pth.tar'
+  MODEL_NAME_1: 'mdl1_epoch37_acc100.00_model.pth.tar'
+  MODEL_NAME_2: 'mdl2_epoch37_acc100.00_model.pth.tar'
+  MODEL_NAME_3: 'mdl3_epoch37_acc100.00_model.pth.tar'
   

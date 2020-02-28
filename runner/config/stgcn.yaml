@@ -1,4 +1,4 @@
-MODE: 'test' # train/test
+MODE: 'inference' # train/test
 OUTPUT_PATH: '../output/test'
 EPOCHS: 2000
 START_EPOCH: 0
@@ -31,10 +31,10 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/test/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/test/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/labels_*.h5'
   
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/home/emotiongroup/emotionGroup/emotion-bot/output/saved_models/stgcn/23-02-2020-00-55-10'
+  MODEL_FOLDER: '/scratch/emotiongroup/Run 3/saved models/stgcn/23-02-2020-00-55-10'
   MODEL_NAME: 'epoch2_acc35.12_model.pth.tar'

@@ -177,4 +177,11 @@ class ChannelFusion(nn.Module):
         out = self.softmax()
 
         return out
+    
+if __name__ == "__main__":
+    skcnn = SkCnn(4, 3, 0.2)
+    image = torch.rand(1, 3, 244, 244)
+    a = skcnn(image)
+    print(sum([param.nelement() for param in skcnn.parameters()]))
+    print(a.data)
         

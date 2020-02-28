@@ -5,6 +5,7 @@ import copy
 import pickle
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from trainer import Trainer
 
@@ -51,7 +52,7 @@ class Inference():
         result_frag = []
         label_frag = []
 
-        for data, label_and_group in loader:
+        for data, label_and_group in tqdm(loader):
             with torch.no_grad():
                 # get data 
                 data_vgp = data.float().to(self.trainer1.cuda)

@@ -33,7 +33,7 @@ def load_data(_path_features, _path_lables, coords, joints,cycles=3, test_size =
         data_list_curr = np.tile(data_list[si], (int(np.ceil(time_steps / len(data_list[si]))), 1))
         for ci in range(cycles):
             data[si, time_steps * ci:time_steps * (ci + 1), :] = data_list_curr[0:time_steps]
-    data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size=0.1)
+    data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size = test_size)
     
     return data, labels, data_train, labels_train, data_test, labels_test
 
@@ -81,7 +81,7 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, 
                 data[si, time_steps * ci:time_steps * (ci + 1), :] = data_list_curr[0:time_steps]
         data_train, data_test, labels_train, labels_test = train_test_split(data,
                                                                             labels,
-                                                                            test_size=0.1)
+                                                                            test_size = test_size)
         
         all_data_train.extend(data_train)
         all_data_test.extend(data_test)
@@ -161,6 +161,10 @@ class TrainTestLoader_vscnn(torch.utils.data.Dataset):
         img_data[:,:,0] = (data_max[0] - data_numpy[0,:,:,0]) * ( 255 / (data_max[0] - data_min[0]) )
         img_data[:,:,1] = (data_max[1] - data_numpy[1,:,:,0]) * ( 255 / (data_max[1] - data_min[1]) )
         img_data[:,:,2] = (data_max[2] - data_numpy[2,:,:,0]) * ( 255 / (data_max[2] - data_min[2]) )
+        
+#        img_data[:,:,0] = np.divide(img_data[:,:,0], img_data[:,:,2]+1e-9)
+#        img_data[:,:,1] = np.divide(img_data[:,:,1], img_data[:,:,2]+1e-9)
+#        img_data[:,:,2] = np.divide(img_data[:,:,2], img_data[:,:,2]+1e-9)
         
         
         img_data = cv2.resize(img_data, (244,244))

@@ -1,18 +1,20 @@
+# Training details : 3D training warmstart with 3d model , Combined -ELMD_0 and 340_100
+
 MODE: 'train' # train/test/inference
-OUTPUT_PATH: '../output_test'
+OUTPUT_PATH: '../output'
 EPOCHS: 2000
-START_EPOCH: 155
+START_EPOCH: 0
 LOG_INTERVAL: 100
 CUDA_DEVICE: 0 #'cuda0'
 BATCH_SIZE: 32
-NUM_WORKERS: 4
+NUM_WORKERS: 1
 SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TOPK: [1]
-STEP: [0.25, 0.5, 0.75]
+STEP: [1]
 EVAL_INTERVAL: 1
 TERMINAL_LOG: True
-WARM_START: False
+WARM_START: True
 
 # Model parameters
 MODEL:
@@ -20,23 +22,22 @@ MODEL:
   DROPOUT: 0.2
   OPTIMIZER: 
     TYPE: 'adam'
-    LR: 0.01
+    LR: 0.009
     WEIGHT_DECAY: 0.00001
   LOSS: 'cross_entropy'
   TARGETS: ['emotion_classes', 'groups']
   LAYER_CHANNELS: [32, 64, 16]
-
+#
 # Data params
 DATA:
   TYPE: 'multi_view'
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/test/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/test/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/Combined_test/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/Combined_test*/labels_*.h5'
 
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/Run 3/saved models/vs_gcnn/23-02-2020-00-32-48'
-#  MODEL_NAME: 'epoch1_acc21.07_model.pth.tar'
-  MODEL_NAME: 'epoch123_acc50.81_model.pth.tar'
+  MODEL_FOLDER: '/home/emotiongroup/emotionGroup/emotion-bot/output/saved_models/vs_gcnn/25-02-2020-04-08-01'
+  MODEL_NAME: 'mdl_epoch40_acc97.05_model.pth.tar'

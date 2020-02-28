@@ -257,7 +257,6 @@ class Trainer(object):
         loss_value = []
         result_frag = []
         label_frag = []
-
         for data, label_and_group in loader:
             if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
                 # get data and prepare according to group
@@ -332,13 +331,29 @@ class Trainer(object):
             if self.accuracy_updated:
                 if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
                     for idx in range(len(self.model.models)):
-                        torch.save(self.model.models[idx].state_dict(),
-                            os.path.join(self.args['WORK_DIR'], 
-                                            'mdl{}_epoch{}_acc{:.2f}_model.pth.tar'.format(idx, epoch, self.best_accuracy.item())))
+                        torch.save({
+                                'epoch': epoch,
+                                'model_state_dict': self.model.models[idx].state_dict(),
+                                'optimizer_state_dict': self.optimizer[idx].state_dict(),
+                                'loss_value': self.epoch_info['mean_loss'],
+                                'loss': self.loss},
+                                os.path.join(self.args['WORK_DIR'],'mdl{}_epoch{}_acc{:.2f}_model.pth.tar'.format(idx, epoch, self.best_accuracy.item())))
+#                        torch.save(self.model.models[idx].state_dict(),
+#                            os.path.join(self.args['WORK_DIR'], 
+#                                            'mdl{}_epoch{}_acc{:.2f}_model.pth.tar'.format(idx, epoch, self.best_accuracy.item())))
                 else:
-                    torch.save(self.model.state_dict(),
-                            os.path.join(self.args['WORK_DIR'],
-                                            'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
+                    
+                    torch.save({
+                                'epoch': epoch,
+                                'model_state_dict': self.model.state_dict(),
+                                'optimizer_state_dict': self.optimizer.state_dict(),
+                                'loss_value': self.epoch_info['mean_loss'],
+                                'loss': self.loss},
+                                os.path.join(self.args['WORK_DIR'],'mdl_epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
+                    
+#                    torch.save(self.model.state_dict(),
+#                            os.path.join(self.args['WORK_DIR'],
+#                                            'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
 
                 if self.epoch_info['mean_loss'] < self.best_loss:
                         self.best_loss = self.epoch_info['mean_loss']
@@ -357,37 +372,47 @@ class Trainer(object):
     def load_model(self):
         if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
             for idx in range(len(self.model.models)):
-                model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
+                
+                
+                path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
                                       self.args['TEST'][f'MODEL_NAME_{idx}'])
-                self.model.models[idx].load_state_dict(torch.load(model_path, 
-                                 map_location=f'cuda:{self.cuda}'), 
-                                 strict=True)
+                
+                checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
+                self.model.models[idx].load_state_dict(checkpoint['model_state_dict'], strict=True)
+                self.optimizer[idx].load_state_dict(checkpoint['optimizer_state_dict'])
+                self.meta_info['epoch'] = checkpoint['epoch']
+                self.epoch_info['mean_loss'] = checkpoint['loss_value']
+                self.loss = checkpoint['loss']
+                
+#                self.model.models[idx].load_state_dict(torch.load(model_path, 
+#                                 map_location=f'cuda:{self.cuda}'), 
+#                                 strict=True)
+                self.model.models[idx].to(self.cuda)
                 self.model.models[idx].eval()
         else:
             
-            model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
-                                      self.args['TEST']['MODEL_NAME'])
-            self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
-                                       strict=True)
-            self.model.eval()                    
+            path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
+                                  self.args['TEST'][f'MODEL_NAME'])
+            
+            checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
+            self.model.load_state_dict(checkpoint['model_state_dict'], strict=True)
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.meta_info['epoch'] = checkpoint['epoch']
+            self.epoch_info['mean_loss'] = checkpoint['loss_value']
+            self.loss = checkpoint['loss']
+            
+#            self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
+#                                       strict=True)
+            self.model.to(self.cuda)
+            self.model.eval()                     
         
     def warm_start(self):
+        self.load_model()
+        self.test()
         if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
             for idx in range(len(self.model.models)):
-                model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
-                                      self.args['TEST'][f'MODEL_NAME_{idx}'])
-                self.model.models[idx].load_state_dict(torch.load(model_path, 
-                                 map_location=f'cuda:{self.cuda}'), 
-                                 strict=True)
-                self.model.models[idx].to(self.cuda)
                 self.model.models[idx].train()
         else:
-            
-            model_path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
-                                      self.args['TEST']['MODEL_NAME'])
-            self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
-                                       strict=True)
-            self.model.to(self.cuda)
             self.model.train()   
         
 

@@ -17,7 +17,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vscnn_vgf', metavar='s',
+parser.add_argument('--settings', type=str, default='vs_gcnn', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 print(f'---> Settings file - {cli_args.settings}')
@@ -29,7 +29,7 @@ args['YAML_FILE_NAME'] = cli_args.settings
 if args['MODE'] == 'train':
     test_size = 0.1
 else:
-    test_size = 1.0
+    test_size = 0.99
 
 # Load datasets
 if data_args['TYPE'] == 'single_view':
