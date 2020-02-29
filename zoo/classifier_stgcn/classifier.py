@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchsummary as summary
 
 from zoo.classifier_stgcn.utils.tgcn import ConvTemporalGraphical
 from zoo.classifier_stgcn.utils.graph import Graph
@@ -190,3 +191,12 @@ class st_gcn(nn.Module):
         x = self.tcn(x) + res
 
         return self.relu(x), A
+
+if __name__ == "__main__":
+    # vscnn = SkCnn(4, 3, 0.2)
+    stgcn = Classifier(3, 4, {'strategy': 'spatial'})
+    image = torch.rand(1, 3, 244, 244)
+    # print(summary.summary(vscnn, (3, 244, 244)))
+    print(summary.summary(stgcn, (3, 75, 16, 1)))
+    # a = vgcnn(image)
+    # print(a.data)

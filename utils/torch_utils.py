@@ -57,4 +57,3 @@ def get_loss_fn(loss_name):
         return nn.CrossEntropyLoss()
     else:
         raise ValueError('Unknown loss function')
-

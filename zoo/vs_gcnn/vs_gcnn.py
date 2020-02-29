@@ -104,8 +104,9 @@ class VSGCNN(nn.Module):
 
 
 if __name__ == "__main__":
-    vgcnn = VSGCNN(4, 3, 4, 0.2)
+    vgcnn = VSGCNN(4, 3, 8, 0.2)
     image = torch.rand(1, 3, 244, 244)
+    print(summary.summary(vgcnn, (3, 244, 244)))
     a = vgcnn(image)
     print(sum([param.nelement() for param in vgcnn.parameters()]))
     print(a.data)

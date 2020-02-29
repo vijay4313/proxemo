@@ -3,6 +3,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchsummary as summary
 
 import numpy as np
 
@@ -185,3 +186,11 @@ if __name__ == "__main__":
     print(sum([param.nelement() for param in skcnn.parameters()]))
     print(a.data)
         
+if __name__ == "__main__":
+    # vscnn = SkCnn(4, 3, 0.2)
+    vgp = ViewGroupPredictor(3, 8)
+    image = torch.rand(1, 3, 244, 244)
+    # print(summary.summary(vscnn, (3, 244, 244)))
+    print(summary.summary(vgp, (3, 244, 244)))
+    # a = vgcnn(image)
+    # print(a.data)
