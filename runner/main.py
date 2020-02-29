@@ -65,6 +65,10 @@ if data_args['TYPE'] == 'multi_view':
     num_classes_angles = np.unique(angles_train).shape[0]
 
 # Convert datasets to Pytorch data and model specific parameters
+    
+print(f' -----> {data_train[0].shape}')
+print(f' -----> {len(data_train)}')
+
 
 if model_args['TYPE'] in ['stgcn']:
     num_classes = num_classes_label

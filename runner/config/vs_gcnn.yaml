@@ -1,13 +1,14 @@
-# Training details : 3D training warmstart with 3d model , Combined -ELMD_0 and 340_100
+# Training details : 3D training warmstart with 3d model(trained on342 first and then on 1800)
+# datasets - ELMD_0 and 340_100
 
 MODE: 'train' # train/test/inference
-OUTPUT_PATH: '../output'
+OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 100
 CUDA_DEVICE: 0 #'cuda0'
 BATCH_SIZE: 32
-NUM_WORKERS: 1
+NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
 SAVE_FEATURES: True
 TOPK: [1]
@@ -35,9 +36,9 @@ DATA:
   JOINTS: 16
   CYCLES: 1
   FEATURES_FILE: '/scratch/emotiongroup/data/Combined_test/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/Combined_test*/labels_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/Combined_test/labels_*.h5'
 
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/home/emotiongroup/emotionGroup/emotion-bot/output/saved_models/vs_gcnn/25-02-2020-04-08-01'
-  MODEL_NAME: 'mdl_epoch40_acc97.05_model.pth.tar'
+  MODEL_FOLDER: '/home/emotiongroup/emotionGroup/emotion-bot/output/saved_models/vs_gcnn/26-02-2020-10-56-06'
+  MODEL_NAME: 'mdl_epoch345_acc86.17_model.pth.tar'

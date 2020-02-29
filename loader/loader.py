@@ -73,7 +73,6 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, 
             if time_steps_curr > time_steps:
                 time_steps = time_steps_curr
             labels[si] = fl[list(fl.keys())[si]][()]
-    
         data = np.empty((num_samples, time_steps*cycles, joints*coords))
         for si in range(num_samples):
             data_list_curr = np.tile(data_list[si], (int(np.ceil(time_steps / len(data_list[si]))), 1))
@@ -82,7 +81,7 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, 
         data_train, data_test, labels_train, labels_test = train_test_split(data,
                                                                             labels,
                                                                             test_size = test_size)
-        
+
         all_data_train.extend(data_train)
         all_data_test.extend(data_test)
         all_labels_train.extend(labels_train)
@@ -91,8 +90,8 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, 
         all_angles_test.extend([angle]*len(labels_test))
         
     return data, labels, \
-                np.asarray(all_data_train), all_labels_train, \
-                np.asarray(all_data_test), all_labels_test, \
+                all_data_train, all_labels_train, \
+                all_data_test, all_labels_test, \
                 all_angles_train, all_angles_test
 
 def scale(_data):
@@ -140,18 +139,20 @@ class TrainTestLoader_vscnn(torch.utils.data.Dataset):
 
     def __init__(self, data, label, joints, coords, num_classes):
         # data: N C T J
-        self.data = np.reshape(data, (data.shape[0], data.shape[1], joints, coords, 1))
-        self.data = np.moveaxis(self.data, [1, 2, 3], [2, 3, 1])
+        self.data = data
 
         # load label
         self.label = label
-
-        self.N, self.C, self.T, self.J, self.M = self.data.shape
+        
+        self.joints = joints
+        self.coords = coords
 
     def __len__(self):
         return len(self.label)
     
     def _convert_skeletion_to_image(self, data_numpy):
+        # (1, 3, 75, 16, 1)
+        data_numpy = np.squeeze(data_numpy, axis = 0)
         data_max = np.max(data_numpy, (1,2,3))
         data_min = np.min(data_numpy, (1,2,3))
         img_data = np.zeros((data_numpy.shape[1],
@@ -166,18 +167,27 @@ class TrainTestLoader_vscnn(torch.utils.data.Dataset):
 #        img_data[:,:,1] = np.divide(img_data[:,:,1], img_data[:,:,2]+1e-9)
 #        img_data[:,:,2] = np.divide(img_data[:,:,2], img_data[:,:,2]+1e-9)
         
-        
         img_data = cv2.resize(img_data, (244,244))
+        
 #        cv2.imshow("testframe", img_data)
 #        cv2.waitKey(10)
 #        cv2.imwrite(f"../temp/{np.random.randint(low=1, high=100)}.png",
 #                               img_data)
+        
         return img_data
         
     def __getitem__(self, index):
-        # get data
-        # Data format --> (3, 75, 16, 1)
-        data_numpy = np.array(self.data[index])
+        
+        # data: N C T J
+        data_numpy = np.asarray(self.data[index])
+        data_numpy = np.reshape(data_numpy,
+                               (1,
+                                data_numpy.shape[0],
+                                self.joints,
+                                self.coords,
+                                1))
+        data_numpy = np.moveaxis(data_numpy, [1, 2, 3], [2, 3, 1])
+        self.N, self.C, self.T, self.J, self.M = data_numpy.shape
         label = self.label[index]
         img_data = self._convert_skeletion_to_image(data_numpy)
         
