@@ -44,7 +44,7 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, 
     # sorting files so that features and labels files match
     feature_files.sort()
     label_files.sort()
-    
+        
     angle_regex = re.compile('(\d*).h5')
     folder_regex = re.compile('(\w*)\/')
     

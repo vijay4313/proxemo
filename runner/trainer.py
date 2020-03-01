@@ -221,7 +221,7 @@ class Trainer(object):
                 if len(self.args['MODEL']['TARGETS']) > 1:
                     label = (self.num_classes*label + group).to(self.cuda)
                 else:
-                    label = label_and_group.long().to(self.cuda)
+                    label = label.long().to(self.cuda)
                 
                 output = self.model(data)
                 loss = self.loss(output, label)

@@ -35,7 +35,8 @@ def generateDataSet(_path, _ftype, _dpath,coords, joints, cycles=3, angles = 0, 
     ff = h5py.File(file_feature, 'r')
     file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
     fl = h5py.File(file_label, 'r')    
-    
+    if not os.path.exists(_dpath):
+        os.makedirs(_dpath)
     pbarAngle = tqdm(angles,
                      desc = "Angle")
     for angle in pbarAngle:
@@ -57,11 +58,11 @@ def generateDataSet(_path, _ftype, _dpath,coords, joints, cycles=3, angles = 0, 
     
 if __name__ == "__main__":
 #    pts, label = readDataSingleGait("../data", "", 3, 16, 1)
-    angles = range(0,360,5)
+    angles = [33,66,123,156, 213, 246, 303, 336]
     generateDataSet("../data",
-                    "",
-                    "../data/AugDataset_test_340_190cm",
-                    3, 16, 1, angles, 190)
+                    "_ELMD",
+                    "../data/AugDataset_test-custom_ELMD_150_cm",
+                    3, 16, 1, angles, 150)
     
 
 

@@ -1,5 +1,5 @@
-MODE: 'inference' # train/test
-OUTPUT_PATH: '../output/test'
+MODE: 'train' # train/test
+OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 100
@@ -31,10 +31,12 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/test_100/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/test_100/labels_*.h5'
+#  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_340_150_cm/features_*.h5'
+#  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_340_150_cm/labels_*.h5'
   
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/Run 3/saved models/stgcn/23-02-2020-00-55-10'
+  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/inference models/340/stgcn'
   MODEL_NAME: 'epoch2_acc35.12_model.pth.tar'

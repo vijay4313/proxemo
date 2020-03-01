@@ -1,12 +1,12 @@
-# Training details : 3D training warmstart with 3d model(trained on342 first and then on 1800)
-# datasets - ELMD_0 and 340_100
+#
+#
 
 MODE: 'inference' # train/test/inference
 OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 100
-CUDA_DEVICE: 1 #'cuda0'
+CUDA_DEVICE: 0 #'cuda0'
 BATCH_SIZE: 32
 NUM_WORKERS: 2
 SNAPSHOT_INTERVAL: 5
@@ -35,10 +35,10 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/test_100/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/test_100/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/labels_*.h5'
 
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/Run 6/saved_models/vs_gcnn/29-02-2020-01-13-54'
-  MODEL_NAME: 'mdl_epoch104_acc86.39_model.pth.tar'
+  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/inference models/combined/vsgcnn'
+  MODEL_NAME: 'mdl_epoch134_acc86.92_model.pth.tar'
