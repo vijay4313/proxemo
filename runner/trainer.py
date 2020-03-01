@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torchlight
 from torch.utils.tensorboard import SummaryWriter
+import yaml
+
 from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init,
                                SummaryStatistics)
@@ -45,7 +47,6 @@ class Trainer(object):
         self.best_epoch = None
         self.best_accuracy = np.zeros((1, np.max(self.args['TOPK'])))
         self.accuracy_updated = False
-        self.summary_statistics = SummaryStatistics()
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
         log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', args['MODEL']['TYPE'], now)
         self.args['WORK_DIR'] = os.path.join(args['OUTPUT_PATH'], 'saved_models', args['MODEL']['TYPE'], now)
@@ -58,6 +59,7 @@ class Trainer(object):
         self.create_working_dir(self.args['RESULT_SAVE_DIR'])
         yaml_parser.copy_yaml(self.args['YAML_FILE_NAME'], self.args['WORK_DIR'])
         self.build_model(model_kwargs)
+        self.summary_statistics = SummaryStatistics(self.num_classes * model_kwargs['NUM_GROUPS'])
     
     def create_working_dir(self, dir_name):
         if not os.path.exists(dir_name):
@@ -172,7 +174,7 @@ class Trainer(object):
         self.logger.add_scalar('test-Iter-accuracy',
                                accuracy,
                                 self.meta_info['epoch'])
-        self.summary_statistics.update(self.label,np.asarray(rank[:,0]))
+        self.summary_statistics.update(self.label,np.asarray(rank[:,-1]))
 
     def per_train(self):
         # put model in training mode
@@ -218,8 +220,8 @@ class Trainer(object):
                 group = label_and_group[1].long() # view angle group
                 if len(self.args['MODEL']['TARGETS']) > 1:
                     label = (self.num_classes*label + group).to(self.cuda)
-#                else:
-#                    label = label_and_group.long().to(self.cuda)
+                else:
+                    label = label_and_group.long().to(self.cuda)
                 
                 output = self.model(data)
                 loss = self.loss(output, label)
@@ -321,7 +323,6 @@ class Trainer(object):
         if evaluation:
             self.group = np.concatenate(group_frag)
             self.label = np.concatenate(label_frag)
-            self.result_summary = self.summary_statistics.get_metrics()
             self.epoch_info['mean_loss'] = np.mean(loss_value)
             self.show_epoch_info(mode='test')
 
@@ -378,15 +379,17 @@ class Trainer(object):
 
     def test(self):
         self.per_test()
+        self.result_summary = self.summary_statistics.get_metrics()
         file_name = 'test_result'
         save_file = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'.pkl') 
-        save_file_summary = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_summary.pkl') 
+        save_file_summary = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_summary.txt') 
+        save_file_confusion = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_confusion.csv') 
+        np.savetxt(save_file_confusion, self.result_summary['conf_matrix'], delimiter = ',')
         result_dict = dict(zip(self.label,self.result))
         with open(save_file, 'wb') as handle:
             pickle.dump(result_dict, handle)
-        with open(save_file_summary, 'wb') as handle:
-            pickle.dump(self.result_summary, handle)
-        print(self.result_summary)
+        with open(save_file_summary, 'w') as handle:
+            handle.write(str(self.result_summary))
             
     def load_model(self):
         if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
@@ -397,15 +400,14 @@ class Trainer(object):
                                       self.args['TEST'][f'MODEL_NAME_{idx}'])
                 
                 checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
-                self.model.models[idx].load_state_dict(checkpoint['model_state_dict'], strict=True)
-                self.optimizer[idx].load_state_dict(checkpoint['optimizer_state_dict'])
-                self.meta_info['epoch'] = checkpoint['epoch']
-                self.epoch_info['mean_loss'] = checkpoint['loss_value']
-                self.loss = checkpoint['loss']
-                
-#                self.model.models[idx].load_state_dict(torch.load(model_path, 
-#                                 map_location=f'cuda:{self.cuda}'), 
-#                                 strict=True)
+                try:
+                    self.model.models[idx].load_state_dict(checkpoint['model_state_dict'], strict=True)
+                    self.optimizer[idx].load_state_dict(checkpoint['optimizer_state_dict'])
+                    self.meta_info['epoch'] = checkpoint['epoch']
+                    self.epoch_info['mean_loss'] = checkpoint['loss_value']
+                    self.loss = checkpoint['loss']
+                except:
+                    self.model.models[idx].load_state_dict(checkpoint, strict=True)
                 self.model.models[idx].to(self.cuda)
                 self.model.models[idx].eval()
         else:
@@ -414,14 +416,14 @@ class Trainer(object):
                                   self.args['TEST'][f'MODEL_NAME'])
             
             checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
-            self.model.load_state_dict(checkpoint['model_state_dict'], strict=True)
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.meta_info['epoch'] = checkpoint['epoch']
-            self.epoch_info['mean_loss'] = checkpoint['loss_value']
-            self.loss = checkpoint['loss']
-            
-#            self.model.load_state_dict(torch.load(model_path, map_location=f'cuda:{self.cuda}'), 
-#                                       strict=True)
+            try:
+                self.model.load_state_dict(checkpoint['model_state_dict'], strict=True)
+                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+                self.meta_info['epoch'] = checkpoint['epoch']
+                self.epoch_info['mean_loss'] = checkpoint['loss_value']
+                self.loss = checkpoint['loss']
+            except:
+                self.model.load_state_dict(checkpoint, strict=True)
             self.model.to(self.cuda)
             self.model.eval()                     
         

@@ -40,5 +40,5 @@ DATA:
 
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/home/emotiongroup/emotionGroup/emotion-bot/output/saved_models/vs_gcnn/29-02-2020-01-13-54'
+  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/Run 6/saved_models/vs_gcnn/29-02-2020-01-13-54'
   MODEL_NAME: 'mdl_epoch104_acc86.39_model.pth.tar'

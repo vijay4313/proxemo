@@ -3,7 +3,7 @@ OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 10
-CUDA_DEVICE: 0 #'cuda0'
+CUDA_DEVICE: 1 #'cuda0'
 BATCH_SIZE: 32
 NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
@@ -32,12 +32,12 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_ELMD_0cm/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/test_100/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/test_100/labels_*.h5'
   
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/Run 4/saved_models/vscnn_vgf/23-02-2020-22-49-27'
+  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/Run 4/saved_models/vscnn_vgf/23-02-2020-22-49-27'
   MODEL_NAME: 'vgp.pth.tar'
   MODEL_NAME_0: 'mdl0_epoch37_acc100.00_model.pth.tar'
   MODEL_NAME_1: 'mdl1_epoch37_acc100.00_model.pth.tar'
