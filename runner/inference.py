@@ -8,10 +8,12 @@ import torch
 from tqdm import tqdm
 
 from trainer import Trainer
+from utils.torch_utils import SummaryStatistics
 
 class Inference():
     def __init__(self, args, data_loader, num_classes, graph_dict, model_kwargs):
         self.args = args
+        self.summary_statistics = SummaryStatistics()
         if self.args['MODEL']['TYPE'] == 'vscnn':
             
             args1 = copy.deepcopy(self.args)
@@ -34,12 +36,17 @@ class Inference():
             self.per_test_vscnn()
             file_name = 'test_result'
             save_file = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'.pkl') 
+            save_file_summary = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_summary.pkl') 
             result_dict = dict(zip(self.label,self.result))
             with open(save_file, 'wb') as handle:
                 pickle.dump(result_dict, handle)
+            with open(save_file_summary, 'wb') as handle:
+                pickle.dump(self.result_summary, handle)
+            print(self.result_summary)
             
         else:
             self.trainer1.test()
+            print(self.trainer1.result_summary)
             
     def per_test_vscnn(self, evaluation=True):
         # put models in eval mode
@@ -51,7 +58,10 @@ class Inference():
         loss_value = []
         result_frag = []
         label_frag = []
-
+        group_frag = []
+        
+        self.summary_statistics.reset()
+        
         for data, label_and_group in tqdm(loader):
             with torch.no_grad():
                 # get data 
@@ -79,11 +89,16 @@ class Inference():
                             loss = self.trainer_vgf.loss(output, group_label)
                             loss_value.append(loss.item())
                             label_frag.append(group_label.data.cpu().numpy())
+                            group_frag.append([index]*req_index.size)
+                            self.summary_statistics.update(group_label.data.cpu().numpy(), 
+                                                           output.data.cpu().numpy().astype(int))
 
         self.result = np.concatenate(result_frag)
         
         if evaluation:
+            self.group = np.concatenate(group_frag)
             self.label = np.concatenate(label_frag)
+            self.result_summary = self.summary_statistics.get_metrics()
             print(f'MEAN LOSS : {np.mean(loss_value):0.4f}')
             # show top-k accuracy
             for k in self.args['TOPK']:
@@ -91,5 +106,6 @@ class Inference():
                 hit_top_k = [l in rank[i, -k:] for i, l in enumerate(self.label)]
                 accuracy = 100. * sum(hit_top_k) * 1.0 / len(hit_top_k)
                 print('\tTop{}: {:.2f}%'.format(k, accuracy))
+                self.summary_statistics.update(self.label,np.asarray(rank[:,0]))
                 
         

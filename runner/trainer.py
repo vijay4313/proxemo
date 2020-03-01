@@ -10,9 +10,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torchlight
 from torch.utils.tensorboard import SummaryWriter
-
 from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
-                               get_loss_fn, get_optimizer, weights_init)
+                               get_loss_fn, get_optimizer, weights_init,
+                               SummaryStatistics)
 from zoo.classifier_stgcn.classifier import Classifier
 from zoo.vscnn.vscnn_base import ViewGroupPredictor
 from zoo.vscnn.vscnn_base import ViewGroupFeature
@@ -45,6 +45,7 @@ class Trainer(object):
         self.best_epoch = None
         self.best_accuracy = np.zeros((1, np.max(self.args['TOPK'])))
         self.accuracy_updated = False
+        self.summary_statistics = SummaryStatistics()
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
         log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', args['MODEL']['TYPE'], now)
         self.args['WORK_DIR'] = os.path.join(args['OUTPUT_PATH'], 'saved_models', args['MODEL']['TYPE'], now)
@@ -171,6 +172,7 @@ class Trainer(object):
         self.logger.add_scalar('test-Iter-accuracy',
                                accuracy,
                                 self.meta_info['epoch'])
+        self.summary_statistics.update(self.label,np.asarray(rank[:,0]))
 
     def per_train(self):
         # put model in training mode
@@ -183,7 +185,7 @@ class Trainer(object):
         self.adjust_lr()
         loader = self.data_loader['train']
         loss_value = []
-
+        
         for data, label_and_group in loader:
             # forward
             # handling multiple modes in case of feature predictor for vscnn
@@ -212,12 +214,12 @@ class Trainer(object):
             else:
                 # get data
                 data = data.float().to(self.cuda)
+                label = label_and_group[0].long() # emotion label
+                group = label_and_group[1].long() # view angle group
                 if len(self.args['MODEL']['TARGETS']) > 1:
-                    label = label_and_group[0].long() # emotion label
-                    group = label_and_group[1].long() # view angle group
                     label = (self.num_classes*label + group).to(self.cuda)
-                else:
-                    label = label_and_group.long().to(self.cuda)
+#                else:
+#                    label = label_and_group.long().to(self.cuda)
                 
                 output = self.model(data)
                 loss = self.loss(output, label)
@@ -257,6 +259,10 @@ class Trainer(object):
         loss_value = []
         result_frag = []
         label_frag = []
+        group_frag = []
+        
+        self.summary_statistics.reset()
+                
         for data, label_and_group in loader:
             if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
                 # get data and prepare according to group
@@ -281,32 +287,41 @@ class Trainer(object):
                                 loss = self.loss(output, group_label)
                                 loss_value.append(loss.item())
                                 label_frag.append(group_label.data.cpu().numpy())
+                                group_frag.append([index]*req_index.size)
+#                                self.summary_statistics.update(group_label.data.cpu().numpy(), 
+#                                                               output.data.cpu().numpy().astype(int))
+                                
                     
             else:
                 # get data
                 data = data.float().to(self.cuda)
+                label = label_and_group[0].long() # emotion label
+                group = label_and_group[1].long() # view angle group
                 if len(self.args['MODEL']['TARGETS']) > 1:
-                    label = label_and_group[0].long() # emotion label
-                    group = label_and_group[1].long() # view angle group
                     label = (self.num_classes*label + group).to(self.cuda)
-                else:
-                    label = label_and_group.long().to(self.cuda)
+#                else:
+#                    label = label_and_group.long().to(self.cuda)
     
                 # inference
                 with torch.no_grad():
                     output = self.model(data, apply_sfmax = True)
                 result_frag.append(output.data.cpu().numpy())
-    
                 # get loss
                 if evaluation:
                     loss = self.loss(output, label)
                     loss_value.append(loss.item())
                     label_frag.append(label.data.cpu().numpy())
-
+                    group_frag.append(group.data.cpu().numpy())
+#                    self.summary_statistics.update(label.data.cpu().numpy(), 
+#                                                   output.data.cpu().numpy().astype(int))
+                    
+        
         self.result = np.concatenate(result_frag)
         
         if evaluation:
+            self.group = np.concatenate(group_frag)
             self.label = np.concatenate(label_frag)
+            self.result_summary = self.summary_statistics.get_metrics()
             self.epoch_info['mean_loss'] = np.mean(loss_value)
             self.show_epoch_info(mode='test')
 
@@ -365,9 +380,13 @@ class Trainer(object):
         self.per_test()
         file_name = 'test_result'
         save_file = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'.pkl') 
+        save_file_summary = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_summary.pkl') 
         result_dict = dict(zip(self.label,self.result))
         with open(save_file, 'wb') as handle:
             pickle.dump(result_dict, handle)
+        with open(save_file_summary, 'wb') as handle:
+            pickle.dump(self.result_summary, handle)
+        print(self.result_summary)
             
     def load_model(self):
         if self.args['MODEL']['TYPE'] == 'vscnn_vgf':

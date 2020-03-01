@@ -23,7 +23,7 @@ MODEL:
     LR: 0.00001
     WEIGHT_DECAY: 0.00001
   LOSS: 'cross_entropy'
-  TARGETS: ['emotion_classes']
+  TARGETS: ['groups']
   LAYER_CHANNELS: [32, 64]
 
 # Data params

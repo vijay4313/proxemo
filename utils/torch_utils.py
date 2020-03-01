@@ -60,19 +60,22 @@ def get_loss_fn(loss_name):
 
 
 class SummaryStatistics(object):
-    def init(self, n_classes=4):
-        self.n_classes = n_classes
+    def __init__(self, n_classes=4):
+        self.n_classes = 16
         self.reset()
     
     def reset(self):
         self.confusion_matrix = np.zeros((self.n_classes, self.n_classes))
 
     def update(self, true_labels, pred_labels):
+        print(np.unique(true_labels))
+        print(np.unique(pred_labels))
         if len(pred_labels.shape) > 1:
             pred_labels = np.argmax(pred_labels, axis=-1)
         conf_matrix = np.bincount(
-                self.n_classes * true_labels.astype(int) + pred_labels.astype(int), minlength=self.n_classes ** 2
-            ).reshape(self.n_classes, self.n_classes)
+                self.n_classes * true_labels.astype(int) + pred_labels.astype(int),
+                minlength=self.n_classes ** 2
+                    ).reshape(self.n_classes, self.n_classes)
 
         self.confusion_matrix += conf_matrix
 
