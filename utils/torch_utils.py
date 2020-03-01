@@ -61,7 +61,7 @@ def get_loss_fn(loss_name):
 
 class SummaryStatistics(object):
     def init(self, n_classes=4):
-        self.n_classes = 4
+        self.n_classes = n_classes
         self.reset()
     
     def reset(self):
@@ -78,10 +78,10 @@ class SummaryStatistics(object):
 
     def get_metrics(self):
         conf_matrix = self.confusion_matrix
-        precision_per_class = np.diag(conf_matrix) / np.sum(conf_matrix, axis=0)
-        recall_per_class = np.diag(conf_matrix) / np.sum(conf_matrix, axis=1)
-        acc_per_class = np.diag(conf_matrix) / (np.sum(conf_matrix, axis=1) + np.sum(conf_matrix, axis=0) - np.diag(conf_matrix))
-        f1_per_class = 2 * precision_per_class * recall_per_class / (precision_per_class + recall_per_class)
+        precision_per_class = np.nan_to_num(np.diag(conf_matrix) / np.sum(conf_matrix, axis=0))
+        recall_per_class = np.nan_to_num(np.diag(conf_matrix) / np.sum(conf_matrix, axis=1))
+        acc_per_class = np.nan_to_num(np.diag(conf_matrix) / (np.sum(conf_matrix, axis=1) + np.sum(conf_matrix, axis=0) - np.diag(conf_matrix)))
+        f1_per_class = np.nan_to_num(2 * precision_per_class * recall_per_class / (precision_per_class + recall_per_class))
 
         avg_precision = np.nanmean(precision_per_class)
         avg_recall = np.nanmean(recall_per_class)
