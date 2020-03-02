@@ -67,6 +67,7 @@ class Classifier(nn.Module):
     def forward(self, x, apply_sfmax=False):
 
         # data normalization
+        x = torch.squeeze(x, 1)
         N, C, T, V, M = x.size()
         x = x.permute(0, 4, 3, 1, 2).contiguous()
         x = x.view(N * M, V * C, T)
@@ -92,6 +93,7 @@ class Classifier(nn.Module):
     def extract_feature(self, x):
 
         # data normalization
+        x = torch.squeeze(x, 1)
         N, C, T, V, M = x.size()
         x = x.permute(0, 4, 3, 1, 2).contiguous()
         x = x.view(N * M, V * C, T)

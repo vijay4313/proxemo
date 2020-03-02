@@ -17,7 +17,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vscnn', metavar='s',
+parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 print(f'---> Settings file - {cli_args.settings}')
@@ -83,26 +83,43 @@ if model_args['TYPE'] == 'vscnn':
 if model_args['TYPE'] in ['vscnn_vgf', 'vs_gcnn']:
     num_classes = num_classes_label
     print(f"---> num classes : {num_classes}")
-    
-data_loader_train_test = {
+
+if model_args['TYPE'] in ['stgcn']:   
+    data_loader_train_test = {
     "train": torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader_vscnn(
-            data_train, list(zip(labels_train, angles_train)), 
-            data_args['JOINTS'], data_args['COORDS'],
-            num_classes),
+        dataset=loader.TrainTestLoader(
+            data_train, list(zip(labels_train, angles_train)), data_args['JOINTS'], data_args['COORDS'], num_classes),
         batch_size=args['BATCH_SIZE'],
         shuffle=True,
         num_workers=args['NUM_WORKERS'],
         drop_last=True),
     "test": torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader_vscnn(
-            data_test, list(zip(labels_test, angles_test)),
-            data_args['JOINTS'], data_args['COORDS'],
-            num_classes),
+        dataset=loader.TrainTestLoader(
+            data_test, list(zip(labels_test, angles_test)), data_args['JOINTS'], data_args['COORDS'], num_classes),
         batch_size=args['BATCH_SIZE'],
         shuffle=True,
         num_workers=args['NUM_WORKERS'],
         drop_last=True)}
+else:
+    data_loader_train_test = {
+        "train": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_train, list(zip(labels_train, angles_train)), 
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True),
+        "test": torch.utils.data.DataLoader(
+            dataset=loader.TrainTestLoader_vscnn(
+                data_test, list(zip(labels_test, angles_test)),
+                data_args['JOINTS'], data_args['COORDS'],
+                num_classes),
+            batch_size=args['BATCH_SIZE'],
+            shuffle=True,
+            num_workers=args['NUM_WORKERS'],
+            drop_last=True)}
 
 graph_dict = {'strategy': 'spatial'}
 

@@ -19,8 +19,8 @@ class Inference():
         self.num_classes = num_classes
         self.args = args
         
-        self.summary_statistics = SummaryStatistics(self.num_classes * model_kwargs['NUM_GROUPS'])
         if self.args['MODEL']['TYPE'] == 'vscnn':
+            self.summary_statistics = SummaryStatistics(self.num_classes * model_kwargs['NUM_GROUPS'])
             
             args1 = copy.deepcopy(self.args)
             args1['MODEL']['TYPE'] = 'vscnn_vgp'

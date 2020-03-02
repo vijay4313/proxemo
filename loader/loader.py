@@ -117,22 +117,29 @@ class TrainTestLoader(torch.utils.data.Dataset):
 
     def __init__(self, data, label, joints, coords, num_classes):
         # data: N C T J
-        self.data = np.reshape(data, (data.shape[0], data.shape[1], joints, coords, 1))
-        self.data = np.moveaxis(self.data, [1, 2, 3], [2, 3, 1])
+        self.data = data
 
         # load label
         self.label = label
-
-        self.N, self.C, self.T, self.J, self.M = self.data.shape
+        
+        self.joints = joints
+        self.coords = coords
 
     def __len__(self):
         return len(self.label)
 
     def __getitem__(self, index):
-        # get data
-        data_numpy = np.array(self.data[index])
+        # data: N C T J
+        data_numpy = np.asarray(self.data[index])
+        data_numpy = np.reshape(data_numpy,
+                               (1,
+                                data_numpy.shape[0],
+                                self.joints,
+                                self.coords,
+                                1))
+        data_numpy = np.moveaxis(data_numpy, [1, 2, 3], [2, 3, 1])
+        self.N, self.C, self.T, self.J, self.M = data_numpy.shape
         label = self.label[index]
-        
         return data_numpy, label
     
 class TrainTestLoader_vscnn(torch.utils.data.Dataset):

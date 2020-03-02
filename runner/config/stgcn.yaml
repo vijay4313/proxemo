@@ -1,4 +1,4 @@
-MODE: 'train' # train/test
+MODE: 'inference' # train/test
 OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
@@ -23,6 +23,7 @@ MODEL:
     WEIGHT_DECAY: 0.1
   LOSS: 'cross_entropy'
   TARGETS: ['emotion_classes']
+#  TARGETS: ['emotion_classes', 'groups'] #['emotion_classes']
   SNAPSHOT_PATH: ''
 
 # Data params

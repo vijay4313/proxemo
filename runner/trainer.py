@@ -59,7 +59,10 @@ class Trainer(object):
         self.create_working_dir(self.args['RESULT_SAVE_DIR'])
         yaml_parser.copy_yaml(self.args['YAML_FILE_NAME'], self.args['WORK_DIR'])
         self.build_model(model_kwargs)
-        self.summary_statistics = SummaryStatistics(self.num_classes * model_kwargs['NUM_GROUPS'])
+        if len(self.args['MODEL']['TARGETS']) > 1:
+            self.summary_statistics = SummaryStatistics(self.num_classes * model_kwargs['NUM_GROUPS'])
+        else:
+            self.summary_statistics = SummaryStatistics(self.num_classes )
     
     def create_working_dir(self, dir_name):
         if not os.path.exists(dir_name):
@@ -301,8 +304,8 @@ class Trainer(object):
                 group = label_and_group[1].long() # view angle group
                 if len(self.args['MODEL']['TARGETS']) > 1:
                     label = (self.num_classes*label + group).to(self.cuda)
-#                else:
-#                    label = label_and_group.long().to(self.cuda)
+                else:
+                    label = label.to(self.cuda)
     
                 # inference
                 with torch.no_grad():
@@ -434,36 +437,4 @@ class Trainer(object):
             for idx in range(len(self.model.models)):
                 self.model.models[idx].train()
         else:
-            self.model.train()   
-        
-
-    # def save_best_feature(self, _features_file, _save_file, data, joints, coords):
-    #     if self.best_epoch is None:
-    #         self.best_epoch, best_accuracy = get_best_epoch_and_accuracy(
-    #             self.args['WORK_DIR'])
-    #     else:
-    #         best_accuracy = self.best_accuracy.item()
-    #     filename = os.path.join(self.args['WORK_DIR'],
-    #                             'epoch{}_acc{:.2f}_model.pth.tar'.format(self.best_epoch, best_accuracy))
-    #     self.model.load_state_dict(torch.load(filename))
-    #     features = np.empty((0, 256))
-    #     fCombined = h5py.File(_features_file, 'r')
-    #     fkeys = fCombined.keys()
-    #     dfCombined = h5py.File(_save_file, 'w')
-    #     for i, (each_data, each_key) in enumerate(zip(data, fkeys)):
-
-    #         # get data
-    #         each_data = np.reshape(
-    #             each_data, (1, each_data.shape[0], joints, coords, 1))
-    #         each_data = np.moveaxis(each_data, [1, 2, 3], [2, 3, 1])
-    #         each_data = torch.from_numpy(each_data).float().to(self.cuda)
-
-    #         # get feature
-    #         with torch.no_grad():
-    #             _, feature = self.model(each_data)
-    #             fname = [each_key][0]
-    #             dfCombined.create_dataset(fname, data=feature.cpu())
-    #             features = np.append(features, np.array(
-    #                 feature.cpu()).reshape((1, feature.shape[0])), axis=0)
-    #     dfCombined.close()
-    #     return features
+            self.model.train()
