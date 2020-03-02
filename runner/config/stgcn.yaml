@@ -3,7 +3,7 @@ OUTPUT_PATH: '../output_test'
 EPOCHS: 2000
 START_EPOCH: 0
 LOG_INTERVAL: 100
-CUDA_DEVICE: 0 #'cuda0'
+CUDA_DEVICE: 1 #'cuda0'
 BATCH_SIZE: 32
 NUM_WORKERS: 4
 SNAPSHOT_INTERVAL: 5
@@ -32,10 +32,8 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/test_100/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/test_100/labels_*.h5'
-#  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_340_150_cm/features_*.h5'
-#  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_340_150_cm/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_250_cm/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_250_cm/labels_*.h5'
   
 # Test / Inference
 TEST:

@@ -17,7 +17,7 @@ from utils import yaml_parser
 
 # Load settings
 parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='vs_gcn', metavar='s',
+parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
                     help='config file for running the network.')
 cli_args = parser.parse_args()
 print(f'---> Settings file - {cli_args.settings}')
