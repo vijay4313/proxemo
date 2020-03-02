@@ -10,7 +10,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torchlight
 from torch.utils.tensorboard import SummaryWriter
-import yaml
 
 from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init,

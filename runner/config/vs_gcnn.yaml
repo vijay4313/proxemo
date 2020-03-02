@@ -35,10 +35,10 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/labels_*.h5'
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_150_cm/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_150_cm/labels_*.h5'
 
 # Test / Inference
 TEST:
-  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/inference models/combined/vsgcnn'
-  MODEL_NAME: 'mdl_epoch134_acc86.92_model.pth.tar'
+  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/Run 6/saved_models/vs_gcnn/29-02-2020-01-13-54'
+  MODEL_NAME: 'mdl_epoch16_acc81.89_model.pth.tar

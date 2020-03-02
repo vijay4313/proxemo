@@ -6,7 +6,6 @@ import pickle
 import numpy as np
 import torch
 from tqdm import tqdm
-import yaml
 from datetime import datetime
 
 from trainer import Trainer
