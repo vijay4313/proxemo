@@ -17,3 +17,5 @@ temp/*
 
 # compile files
 *.pyc
+
+realsense_tracking/.pylintrc
