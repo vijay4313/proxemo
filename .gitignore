@@ -19,3 +19,7 @@ temp/*
 *.pyc
 
 realsense_tracking/.pylintrc
+
+.pylintrc
+
+*.log

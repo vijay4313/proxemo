@@ -14,7 +14,7 @@ from pprint import pprint
 import pyrealsense2 as rs
 import numpy as np
 
-from mpl_toolkits.mplot3d import Axes3D 
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 keypoint_ids = [
@@ -272,7 +272,8 @@ if __name__ == "__main__":
             skeletons, new_skeletons, skel_img = cubemos_track_skeletons(api, bg_removed, verbose)
             # convert to 3D skeleton
             skeletons_3d = []
-
+            skel_np = np.asarray(skeletons)
+            print(skel_np)
             for skel_num, skeleton in enumerate(skeletons):
                 joints = skeleton[0]
                 confidences = skeleton[1]
@@ -302,12 +303,11 @@ if __name__ == "__main__":
                     plt.draw()
                     plt.pause(0.5)
                     ax.clear()
-            
             if verbose:
                 print("Detected skeletons: ", len(skeletons))
                 print(skeletons)
                 print(new_skeletons)
-              
+
             if display:
                 # Stack both images horizontally
                 images = np.hstack((color_image, depth_colormap))
@@ -326,7 +326,8 @@ if __name__ == "__main__":
 
         realsense_cleanup(pipeline)
 
-            
     except Exception as ex:
         realsense_cleanup(pipeline)
         print("Exception occured: \"{}\"".format(ex))
+        
+# TODO: anotate human() fntn
