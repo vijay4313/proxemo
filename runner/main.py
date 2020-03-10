@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 import torch
-import torchlight
 
 from loader import loader
 from trainer import Trainer

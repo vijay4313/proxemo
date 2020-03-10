@@ -37,6 +37,7 @@ if __name__ == "__main__":
     track_pose = Track_Human_Pose(display=True)
     while True:
         track_pose.get_pose()
+        print(track_pose.cubemos.skel3d_np.shape)
         if track_pose.display:
             key = cv2.waitKey(1) & 0xFF
             # press the 'q' key to stop the video stream

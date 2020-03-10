@@ -97,6 +97,7 @@ class Trainer(object):
                 one of %s" % ', '.join(MODEL_TYPE.keys()))
 
         # model
+        print(params)
         self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](*params)
         self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
         self.step_epochs = np.array([math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])

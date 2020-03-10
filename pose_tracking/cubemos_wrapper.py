@@ -53,19 +53,21 @@ class Cubemos_Tacker():
     def render_skeletons(self, image):
         render_result(self.skeletons, image, self.confidence_threshold)
         for skel_num, joints in enumerate(self.skel3d_np):
-                for joint_ndx, pt_3D in enumerate(joints):
+                for joint_ndx, pt_3D in enumerate(joints[[0,-1]]):
                     x_pos = int(self.skeletons[skel_num][0][joint_ndx][0])
                     y_pos = int(self.skeletons[skel_num][0][joint_ndx][1])
+                    text = f"{pt_3D[0]:.2f}, {pt_3D[1]:.2f}, {pt_3D[2]:.2f}"
+                    text = f"{pt_3D[2]:.2f}"
+                    # text = f"{self.skel_ids[skel_num]}"
                     cv2.putText(image,
-                                f"{pt_3D[0]:.2f}, {pt_3D[1]:.2f}, {pt_3D[2]:.2f}",
+                                text,
                                 (x_pos, y_pos),
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 0.5,
-                                (255, 255, 255),
+                                (0, 0, 255),
                                 1,
                                 cv2.LINE_AA)
-        
-        
+
     def map_2D_3D(self, pixel, depth):
         x = (pixel[0] - self.intrinsics.ppx) / self.intrinsics.fx
         y = (pixel[1] - self.intrinsics.ppy) / self.intrinsics.fy

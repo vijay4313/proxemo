@@ -19,6 +19,7 @@ class Real_Sense_Camera():
         # Configure depth and color streams
         self.pipeline = rs.pipeline()
         self.config = rs.config()
+        # self.config.enable_device_from_file(self.config, '/home/emotiongroup/Desktop/rosbag/run2/20200305_225145.bag', False)
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
