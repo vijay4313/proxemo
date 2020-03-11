@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-# cubemos init
-from cubemos.core.nativewrapper import CM_TargetComputeDevice
-from cubemos.core.nativewrapper import initialise_logging, CM_LogLevel
-from cubemos.skeleton_tracking.nativewrapper import Api, SkeletonKeypoints
-
 import argparse
 import os
 import platform
@@ -90,26 +85,26 @@ def render_result(skeletons, img, confidence_threshold):
                 img, limb[0], limb[1], skeleton_color, thickness=2, lineType=cv2.LINE_AA
             )
 
-parser = argparse.ArgumentParser(description="Perform keypoing estimation on an image")
-parser.add_argument(
-    "-c",
-    "--confidence_threshold",
-    type=float,
-    default=0.5,
-    help="Minimum confidence (0-1) of displayed joints",
-)
-parser.add_argument(
-    "-v",
-    "--verbose",
-    action="store_true",
-    help="Increase output verbosity by enabling backend logging",
-)
+# parser = argparse.ArgumentParser(description="Perform keypoing estimation on an image")
+# parser.add_argument(
+#     "-c",
+#     "--confidence_threshold",
+#     type=float,
+#     default=0.5,
+#     help="Minimum confidence (0-1) of displayed joints",
+# )
+# parser.add_argument(
+#     "-v",
+#     "--verbose",
+#     action="store_true",
+#     help="Increase output verbosity by enabling backend logging",
+# )
 
-parser.add_argument(
-    "-o",
-    "--output_image",
-    type=str,
-    help="filename of the output image",
-)
+# parser.add_argument(
+#     "-o",
+#     "--output_image",
+#     type=str,
+#     help="filename of the output image",
+# )
 
-parser.add_argument("image", metavar="I", type=str, help="filename of the input image")
+# parser.add_argument("image", metavar="I", type=str, help="filename of the input image")

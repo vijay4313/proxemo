@@ -1,10 +1,39 @@
 #!/usr/bin/env python3
 
 # cubemos init
-
+import os
 import numpy as np
+import cv2
 
-from cubemos_api import *
+from cubemos.core.nativewrapper import CM_TargetComputeDevice
+from cubemos.core.nativewrapper import initialise_logging, CM_LogLevel
+from cubemos.skeleton_tracking.nativewrapper import Api
+
+from cubemos_api import default_log_dir,\
+                        default_license_dir,\
+                        check_license_and_variables_exist,\
+                        render_result
+                        
+"""
+18  19    1-Root,
+19  20    2-Spine,
+01  02    3-Neck,
+00  01    4-Head,
+05  06    5-Left Shoulder,
+06  07    6-Left Elbow,
+07  08    7- Left Hand,
+02  03    8- Right Shoulder
+03  04    9- Right Elbow
+04  05    10- Right Hand
+11  12    11-Left Thigh,
+12  13   12-Left Knee,
+13  14    13-Left Foot,
+08  09    14-Right Thigh,
+09  10    15-Right Knee,
+10  11   16-Right Foot"
+
+[18, 19, 1, 0, 5, 6, 7, 2, 3, 4, 11, 12, 13, 8, 9, 10]
+"""
 
 class Cubemos_Tacker():
     def __init__(self, intrinsics, verbose = False):
@@ -16,6 +45,7 @@ class Cubemos_Tacker():
         self.new_skeletons = []
         self.skel3d_np = []
         self.skel_ids = []
+        self.keypoint_map = np.asarray([18, 19, 1, 0, 5, 6, 7, 2, 3, 4, 11, 12, 13, 8, 9, 10])
         self.init_skel_track()
         self.init_cubemos_api()
 
@@ -53,20 +83,29 @@ class Cubemos_Tacker():
     def render_skeletons(self, image):
         render_result(self.skeletons, image, self.confidence_threshold)
         for skel_num, joints in enumerate(self.skel3d_np):
-                for joint_ndx, pt_3D in enumerate(joints[[0,-1]]):
-                    x_pos = int(self.skeletons[skel_num][0][joint_ndx][0])
-                    y_pos = int(self.skeletons[skel_num][0][joint_ndx][1])
-                    text = f"{pt_3D[0]:.2f}, {pt_3D[1]:.2f}, {pt_3D[2]:.2f}"
-                    text = f"{pt_3D[2]:.2f}"
-                    # text = f"{self.skel_ids[skel_num]}"
-                    cv2.putText(image,
-                                text,
-                                (x_pos, y_pos),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.5,
-                                (0, 0, 255),
-                                1,
-                                cv2.LINE_AA)
+            for joint_ndx, pt_3D in enumerate(joints[[0,-1]]):
+                x_pos = int(self.skeletons[skel_num][0][joint_ndx][0])
+                y_pos = int(self.skeletons[skel_num][0][joint_ndx][1])
+                text = f"{pt_3D[0]:.2f}, {pt_3D[1]:.2f}, {pt_3D[2]:.2f}"
+                text = f"{pt_3D[2]:.2f}"
+                # text = f"{self.skel_ids[skel_num]}"
+                cv2.putText(image,
+                            text,
+                            (x_pos, y_pos),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (0, 0, 255),
+                            1,
+                            cv2.LINE_AA)
+                # add root and back
+                cv2.circle(image,
+                           (int(self.roots_2d[skel_num][0]),
+                            int(self.roots_2d[skel_num][1])),
+                           2, (255, 0, 255), -1)
+                cv2.circle(image,
+                           (int(self.backs_2d[skel_num][0]),
+                            int(self.backs_2d[skel_num][1])),
+                           2, (255, 0, 255), -1)
 
     def map_2D_3D(self, pixel, depth):
         x = (pixel[0] - self.intrinsics.ppx) / self.intrinsics.fx
@@ -95,17 +134,42 @@ class Cubemos_Tacker():
     def skel2D_to_skel3D(self, depth_image):
         self.skel_ids = []
         self.skel3d_np = []
+        self.roots_2d = []
+        self.backs_2d = []
         for skeleton in self.skeletons:
-            joints = skeleton[0]
+            joints = skeleton.joints
             # confidences = skeleton[1]
-            self.skel_ids.append(skeleton[2])
+            self.skel_ids.append(skeleton.id)
             joints_3d = []
             for joint in joints:
-                x_ndx = min(int(joint[0]), depth_image.shape[0]-1)
-                y_ndx = min(int(joint[1]), depth_image.shape[1]-1)
+                x_ndx = min(int(joint.x), depth_image.shape[0]-1)
+                y_ndx = min(int(joint.y), depth_image.shape[1]-1)
                 depth = depth_image[x_ndx, y_ndx]
                 pt_3D = self.map_2D_3D((x_ndx, y_ndx), depth)
                 joints_3d.append(pt_3D)
+            # add root
+            self.roots_2d.append(((joints[8].x + joints[11].x)/2,
+                                  (joints[8].y + joints[11].y)/2))
+            l_hip = joints_3d[8]
+            r_hip = joints_3d[11]
+            root_x = (l_hip[0] + r_hip[0]) / 2
+            root_y = (l_hip[1] + r_hip[1]) / 2
+            root_z = (l_hip[2] + r_hip[2]) / 2
+            root = (root_x, root_y, root_z)
+            joints_3d.append(root)
+            # add back
+            self.backs_2d.append(((joints[1].x + self.roots_2d[-1][0])/2,
+                                  (joints[1].y + self.roots_2d[-1][1])/2))
+            neck = joints_3d[1]
+            back_x = (neck[0] + root[0]) / 2
+            back_y = (neck[1] + root[1]) / 2
+            back_z = (neck[2] + root[2]) / 2
+            back = (back_x, back_y, back_z)
+            joints_3d.append(back)
+            # all all joints
+            print(len(joints_3d))
             self.skel3d_np.append(joints_3d)
         self.skel3d_np = np.asarray(self.skel3d_np)
-        
+        if len(self.skeletons)>0:
+            self.skel3d_np = self.skel3d_np[:, self.keypoint_map, :]
+                
