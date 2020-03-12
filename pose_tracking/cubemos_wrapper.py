@@ -45,6 +45,8 @@ class Cubemos_Tacker():
         self.new_skeletons = []
         self.skel3d_np = []
         self.skel_ids = []
+        self.roots_2d = []
+        self.backs_2d = []
         self.keypoint_map = np.asarray([18, 19, 1, 0, 5, 6, 7, 2, 3, 4, 11, 12, 13, 8, 9, 10])
         self.init_skel_track()
         self.init_cubemos_api()
@@ -167,7 +169,6 @@ class Cubemos_Tacker():
             back = (back_x, back_y, back_z)
             joints_3d.append(back)
             # all all joints
-            print(len(joints_3d))
             self.skel3d_np.append(joints_3d)
         self.skel3d_np = np.asarray(self.skel3d_np)
         if len(self.skeletons)>0:
