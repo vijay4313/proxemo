@@ -3,6 +3,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchsummary as summary
 
 import numpy as np
 
@@ -36,26 +37,24 @@ class ViewGroupPredictor(nn.Module):
         self.final_layers = nn.Sequential(OrderedDict([
             (self._gen_layer_name('fc', 1), nn.Linear(453152, 128)),
             (self._gen_layer_name('relu'), nn.ReLU()),
-            (self._gen_layer_name('fc', 2), nn.Linear(128, self.num_classes)),
-            (self._gen_layer_name('softmax'), nn.Softmax())
+            (self._gen_layer_name('fc', 2), nn.Linear(128, self.num_classes))
         ]))
-
-    def forward(self, input_tensor):
+        
+        
+    def forward(self, input_tensor, apply_sfmax=False):
         # convert [N, H, W, C] to [N, C, H, W]
-        input_tensor_reshaped = torch.empty((input_tensor.shape[0],
-                                             input_tensor.shape[3],
-                                             input_tensor.shape[1],
-                                             input_tensor.shape[2]), device = input_tensor.device)
-        input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
-        input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
-        input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
+        if input_tensor.size(1) != self.in_channels:
+            input_tensor = input_tensor.permute(0, 3, 2, 1)
         
         # forward pass
-        conv_out = self.conv_layers(input_tensor_reshaped)
-        conv_out = conv_out.view((input_tensor_reshaped.shape[0],-1))
+        conv_out = self.conv_layers(input_tensor)
+        conv_out = conv_out.view((input_tensor.shape[0],-1))
         final_out = self.final_layers(conv_out)
+        
+        if apply_sfmax:
+            final_out = nn.Softmax()(final_out)
 
-        return final_out, None
+        return final_out
 
 
 class SkCnn(nn.Module):
@@ -112,24 +111,22 @@ class SkCnn(nn.Module):
         self.final_layers = nn.Sequential(OrderedDict([
             (self._gen_layer_name(3, 'fc', 1), nn.Linear(9216, 128)),
             (self._gen_layer_name(3, 'relu'), nn.ReLU()),
-            (self._gen_layer_name(3, 'fc', 2), nn.Linear(128, self.num_classes)),
-            (self._gen_layer_name(3, 'softmax'), nn.Softmax())
+            (self._gen_layer_name(3, 'fc', 2), nn.Linear(128, self.num_classes))
         ]))
 
-    def forward(self, input_tensor):
+    def forward(self, input_tensor, apply_sfmax=False):
         
         # convert [N, H, W, C] to [N, C, H, W]
-        input_tensor_reshaped = torch.empty((input_tensor.shape[0],
-                                             input_tensor.shape[3],
-                                             input_tensor.shape[1],
-                                             input_tensor.shape[2]), device = input_tensor.device)
-        input_tensor_reshaped[:, 0, :, :] =input_tensor[:, :, :, 0]
-        input_tensor_reshaped[:, 1, :, :] =input_tensor[:, :, :, 1]
-        input_tensor_reshaped[:, 2, :, :] =input_tensor[:, :, :, 2]
-        first_conv = self.conv_stage_1(input_tensor_reshaped)
+        if input_tensor.size(1) != self.in_channels:
+            input_tensor = input_tensor.permute(0, 3, 2, 1)
+        
+        first_conv = self.conv_stage_1(input_tensor)
         second_conv = self.conv_stage_2(first_conv)
-        second_conv = second_conv.view((input_tensor_reshaped.shape[0],-1))
+        second_conv = second_conv.view((input_tensor.shape[0],-1))
         final = self.final_layers(second_conv)
+        
+        if apply_sfmax:
+            final = nn.Softmax()(final)
 
         return final
 
@@ -181,4 +178,19 @@ class ChannelFusion(nn.Module):
         out = self.softmax()
 
         return out
+    
+if __name__ == "__main__":
+    skcnn = SkCnn(4, 3, 0.2)
+    image = torch.rand(1, 3, 244, 244)
+    a = skcnn(image)
+    print(sum([param.nelement() for param in skcnn.parameters()]))
+    print(a.data)
         
+if __name__ == "__main__":
+    # vscnn = SkCnn(4, 3, 0.2)
+    vgp = ViewGroupPredictor(3, 8)
+    image = torch.rand(1, 3, 244, 244)
+    # print(summary.summary(vscnn, (3, 244, 244)))
+    print(summary.summary(vgp, (3, 244, 244)))
+    # a = vgcnn(image)
+    # print(a.data)

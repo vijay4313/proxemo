@@ -1,0 +1,44 @@
+#
+#
+
+MODE: 'inference' # train/test/inference
+OUTPUT_PATH: '../output_test'
+EPOCHS: 2000
+START_EPOCH: 0
+LOG_INTERVAL: 100
+CUDA_DEVICE: 0 #'cuda0'
+BATCH_SIZE: 32
+NUM_WORKERS: 2
+SNAPSHOT_INTERVAL: 5
+SAVE_FEATURES: True
+TOPK: [1]
+STEP: [1]
+EVAL_INTERVAL: 1
+TERMINAL_LOG: True
+WARM_START: True
+
+# Model parameters
+MODEL:
+  TYPE: 'vs_gcnn'
+  DROPOUT: 0.2
+  OPTIMIZER: 
+    TYPE: 'adam'
+    LR: 0.009
+    WEIGHT_DECAY: 0.00001
+  LOSS: 'cross_entropy'
+  TARGETS: ['emotion_classes', 'groups']
+  LAYER_CHANNELS: [32, 64, 16]
+#
+# Data params
+DATA:
+  TYPE: 'multi_view'
+  COORDS: 3 # in channels
+  JOINTS: 16
+  CYCLES: 1
+  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/features_*.h5'
+  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/labels_*.h5'
+
+# Test / Inference
+TEST:
+  MODEL_FOLDER: '/scratch/emotiongroup/Training Runs IROS/Run 6/saved_models/vs_gcnn/29-02-2020-01-13-54'
+  MODEL_NAME: 'mdl_epoch16_acc81.89_model.pth.tar'

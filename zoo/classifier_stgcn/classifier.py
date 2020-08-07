@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchsummary as summary
 
 from zoo.classifier_stgcn.utils.tgcn import ConvTemporalGraphical
 from zoo.classifier_stgcn.utils.graph import Graph
@@ -63,9 +64,10 @@ class Classifier(nn.Module):
         # fcn for prediction
         self.fcn = nn.Conv2d(256, num_classes, kernel_size=1)
 
-    def forward(self, x):
+    def forward(self, x, apply_sfmax=False):
 
         # data normalization
+        x = torch.squeeze(x, 1)
         N, C, T, V, M = x.size()
         x = x.permute(0, 4, 3, 1, 2).contiguous()
         x = x.view(N * M, V * C, T)
@@ -81,16 +83,17 @@ class Classifier(nn.Module):
         # global pooling
         x = F.avg_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1, 1, 1).mean(dim=1)
-        f = x.squeeze()
+#        f = x.squeeze()
 
         # prediction
         x = self.fcn(x)
         x = x.view(x.size(0), -1)
-        return x, f
+        return x
 
     def extract_feature(self, x):
 
         # data normalization
+        x = torch.squeeze(x, 1)
         N, C, T, V, M = x.size()
         x = x.permute(0, 4, 3, 1, 2).contiguous()
         x = x.view(N * M, V * C, T)
@@ -104,13 +107,14 @@ class Classifier(nn.Module):
             x, _ = gcn(x, self.A * importance)
 
         _, c, t, v = x.size()
-        feature = x.view(N, M, c, t, v).permute(0, 2, 3, 4, 1)
+#        feature = x.view(N, M, c, t, v).permute(0, 2, 3, 4, 1)
 
         # prediction
         x = self.fcn(x)
         output = x.view(N, M, -1, t, v).permute(0, 2, 3, 4, 1)
 
-        return output, feature
+#        return output, feature
+        return output
 
 
 class st_gcn(nn.Module):
@@ -189,3 +193,12 @@ class st_gcn(nn.Module):
         x = self.tcn(x) + res
 
         return self.relu(x), A
+
+if __name__ == "__main__":
+    # vscnn = SkCnn(4, 3, 0.2)
+    stgcn = Classifier(3, 4, {'strategy': 'spatial'})
+    image = torch.rand(1, 3, 244, 244)
+    # print(summary.summary(vscnn, (3, 244, 244)))
+    print(summary.summary(stgcn, (3, 75, 16, 1)))
+    # a = vgcnn(image)
+    # print(a.data)

@@ -6,6 +6,8 @@ data/*
 
 # output files
 output/*
+output_test/*
+output*
 
 # logs
 logs/*
@@ -15,3 +17,9 @@ temp/*
 
 # compile files
 *.pyc
+
+realsense_tracking/.pylintrc
+
+.pylintrc
+
+*.log
