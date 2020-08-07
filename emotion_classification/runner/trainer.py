@@ -14,25 +14,23 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init,
                                SummaryStatistics)
-from zoo.classifier_stgcn.classifier import Classifier
-from zoo.vscnn.vscnn_base import ViewGroupPredictor
-from zoo.vscnn.vscnn_base import ViewGroupFeature
-from zoo.vs_gcnn.vs_gcnn import VSGCNN
+from modeling.vs_gcnn import VSGCNN
 
 from utils import yaml_parser
 
 MODEL_TYPE = {
-    'stgcn': Classifier,
-    'vscnn_vgp': ViewGroupPredictor,
-    'vscnn_vgf': ViewGroupFeature,
     'vs_gcnn': VSGCNN
 }
 
 class Trainer(object):
-    """
-        Processor for gait generation
-    """
+    """[summary]
 
+    Args:
+        object ([type]): [description]
+
+    Raises:
+        ValueError: [description]
+    """
     def __init__(self, args, data_loader, num_classes, graph_dict, model_kwargs):
 
         self.args = args
