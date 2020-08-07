@@ -7,23 +7,24 @@ import numpy as np
 import torch
 
 from loader import loader
-from trainer import Trainer
-from inference import Inference
+from runner.trainer import Trainer
 from utils import yaml_parser
 
 
 # python main.py --settings stgcn
 
 # Load settings
-parser = argparse.ArgumentParser(description='Gait Gen')
-parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
-                    help='config file for running the network.')
-cli_args = parser.parse_args()
-print(f'---> Settings file - {cli_args.settings}')
-args = yaml_parser.yaml_parser(cli_args.settings)
-model_args = args['MODEL']
-data_args = args["DATA"]
-args['YAML_FILE_NAME'] = cli_args.settings
+
+def arg_parser():
+    parser = argparse.ArgumentParser(description='Proxemo Runner')
+    parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
+                        help='config file for running the network.')
+    cli_args = parser.parse_args()
+
+    args = yaml_parser.yaml_parser(cli_args.settings)
+    args['YAML_FILE_NAME'] = cli_args.settings
+
+    return args
 
 if args['MODE'] == 'train':
     test_size = 0.1
