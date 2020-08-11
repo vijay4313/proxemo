@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import pickle
 import h5py
+import yaml
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,12 +16,13 @@ from utils.torch_utils import (find_all_substr, get_best_epoch_and_accuracy,
                                get_loss_fn, get_optimizer, weights_init,
                                SummaryStatistics)
 from modeling.vs_gcnn import VSGCNN
+from loader.loader import data_loader_base
 
-from utils import yaml_parser
 
 MODEL_TYPE = {
     'vs_gcnn': VSGCNN
 }
+
 
 class Trainer(object):
     """[summary]
@@ -31,11 +33,14 @@ class Trainer(object):
     Raises:
         ValueError: [description]
     """
-    def __init__(self, args, data_loader, num_classes, graph_dict, model_kwargs):
 
-        self.args = args
-        self.data_loader = data_loader
-        self.num_classes = num_classes
+    def __init__(self, gen_args, data_config, model_config):
+
+        self.args = gen_args
+        self.data_config = data_config
+        self.model_config = model_config
+
+        self.num_classes = model_config['NUM_CLASSES']
         self.result = dict()
         self.iter_info = dict()
         self.epoch_info = dict()
@@ -44,87 +49,89 @@ class Trainer(object):
         self.best_epoch = None
         self.best_accuracy = np.zeros((1, np.max(self.args['TOPK'])))
         self.accuracy_updated = False
+
+        self.setup()
+
+    def setup(self):
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
-        log_dir = os.path.join(args['OUTPUT_PATH'], 'logs', args['MODEL']['TYPE'], now)
-        self.args['WORK_DIR'] = os.path.join(args['OUTPUT_PATH'], 'saved_models', args['MODEL']['TYPE'], now)
-        self.args['RESULT_SAVE_DIR'] = os.path.join(args['OUTPUT_PATH'], 'test_result', args['MODEL']['TYPE'], now)
+        log_dir = os.path.join(self.args['OUTPUT_PATH'],
+                               'logs', self.model_config['TYPE'], now)
+        self.args['WORK_DIR'] = os.path.join(
+            self.args['OUTPUT_PATH'], 'saved_models', self.model_config['TYPE'], now)
+        self.args['RESULT_SAVE_DIR'] = os.path.join(
+            self.args['OUTPUT_PATH'], 'test_result', self.model_config['TYPE'], now)
         self.logger = SummaryWriter(log_dir=log_dir)
-        self.cuda = args['CUDA_DEVICE'] if args['CUDA_DEVICE'] is not None else 0
-        self.graph_dict = graph_dict
-        self.TERMINAL_LOG = args['TERMINAL_LOG']
+        self.cuda = self.args['CUDA_DEVICE'] if self.args['CUDA_DEVICE'] is not None else 0
+        self.TERMINAL_LOG = self.args['TERMINAL_LOG']
         self.create_working_dir(self.args['WORK_DIR'])
         self.create_working_dir(self.args['RESULT_SAVE_DIR'])
-        yaml_parser.copy_yaml(self.args['YAML_FILE_NAME'], self.args['WORK_DIR'])
-        self.build_model(model_kwargs)
-        if len(self.args['MODEL']['TARGETS']) > 1:
-            self.summary_statistics = SummaryStatistics(self.num_classes * model_kwargs['NUM_GROUPS'])
+        self.model_config['PRETRAIN_PATH'] = self.args['WORK_DIR']
+
+        all_args = {'GENERAL': self.args, 'MODEL': self.model_config, 'DATA': self.data_config}
+
+        with open(os.path.join(self.args['WORK_DIR'], 'settings.yaml'), 'w') as file:
+            yaml.dump(all_args, file)
+
+        # Data loader
+        if self.args['MODE'] == 'train':
+            test_size = 0.1
         else:
-            self.summary_statistics = SummaryStatistics(self.num_classes )
-    
+            test_size = 0.99
+
+        if isinstance(self.data_config, dict):
+            self.data_loader = data_loader_base(self.args, self.data_config, test_size)
+        elif self.data_config is not None:
+            self.data_loader = self.data_config
+
+        # Build Model
+        self.build_model(self.model_config)
+
+        if len(self.model_config['TARGETS']) > 1:
+            self.summary_statistics = SummaryStatistics(
+                self.num_classes * self.model_config['NUM_GROUPS'])
+        else:
+            self.summary_statistics = SummaryStatistics(self.num_classes)
+
     def create_working_dir(self, dir_name):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
     def build_model(self, model_kwargs):
         # model parameters
-        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-            params = [self.args['DATA']['COORDS'],
-                      self.num_classes,
-                      model_kwargs['NUM_GROUPS'],
-                      self.args['MODEL']['DROPOUT'],
-                      self.args['MODEL']['LAYER_CHANNELS']
-                      ]
-        elif self.args['MODEL']['TYPE'] == 'vscnn_vgp':
-            params = [self.args['DATA']['COORDS'],
-                      self.num_classes
-                      ]
-        elif self.args['MODEL']['TYPE'] == 'vs_gcnn':
+        if model_kwargs['TYPE'] == 'vs_gcnn':
             params = [self.num_classes,
-                      self.args['DATA']['COORDS'],
+                      model_kwargs['IN_CHANNELS'],
                       model_kwargs['NUM_GROUPS'],
-                      self.args['MODEL']['DROPOUT'],
-                      self.args['MODEL']['LAYER_CHANNELS']
-                      ]
-        elif self.args['MODEL']['TYPE'] == 'stgcn':
-            params = [self.args['DATA']['COORDS'],
-                      self.num_classes,
-                      self.graph_dict
+                      model_kwargs['DROPOUT'],
+                      model_kwargs['LAYER_CHANNELS']
                       ]
         else:
             raise ValueError("Invalid Model. Model Type should be \
                 one of %s" % ', '.join(MODEL_TYPE.keys()))
 
         # model
-        print(params)
-        self.model = MODEL_TYPE[self.args['MODEL']['TYPE']](*params)
-        self.loss = get_loss_fn(self.args['MODEL']['LOSS'])
-        self.step_epochs = np.array([math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])
-            
+        self.model = MODEL_TYPE[model_kwargs['TYPE']](*params)
+        self.loss = get_loss_fn(model_kwargs['LOSS'])
+        self.step_epochs = np.array(
+            [math.ceil(float(self.args['EPOCHS'] * x)) for x in self.args['STEP']])
+
         # optimizer
-        optimizer_args = self.args['MODEL']['OPTIMIZER']
+        optimizer_args = model_kwargs['OPTIMIZER']
         self.lr = optimizer_args['LR']
-        
-        # handling multiple modes in case of feature predictor for vscnn
-        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-            self.optimizer = []
-            for model in self.model.models:
-                model.apply(weights_init)
-                model.to(self.cuda)
-                self.optimizer.append(get_optimizer(optimizer_args['TYPE'])(model.parameters(),
-                                                                   lr=self.lr,
-                                                                   weight_decay=optimizer_args['WEIGHT_DECAY']))
-        else:
-            self.model.apply(weights_init)
-            self.model.to(self.cuda)
-            self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
-                                                                   lr=self.lr,
-                                                                   weight_decay=optimizer_args['WEIGHT_DECAY'])
-        
+        self.model.apply(weights_init)
+        self.model.to(self.cuda)
+        self.optimizer = get_optimizer(optimizer_args['TYPE'])(self.model.parameters(),
+                                                               lr=self.lr,
+                                                               weight_decay=optimizer_args['WEIGHT_DECAY'])
+
+        if model_kwargs['PRETRAIN_NAME'] != '':
+            self.load_model()
+
     def adjust_lr(self):
 
         # if self.args.optimizer == 'SGD' and\
         if self.meta_info['epoch'] in self.step_epochs:
-            lr = self.args['MODEL']['OPTIMIZER']['LR'] * (
+            lr = self.model_config['OPTIMIZER']['LR'] * (
                 0.1 ** np.sum(self.meta_info['epoch'] >= self.step_epochs))
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = lr
@@ -174,72 +181,47 @@ class Trainer(object):
             k, accuracy, self.best_accuracy[0, k-1]))
         self.logger.add_scalar('test-Iter-accuracy',
                                accuracy,
-                                self.meta_info['epoch'])
-        self.summary_statistics.update(self.label,np.asarray(rank[:,-1]))
+                               self.meta_info['epoch'])
+        self.summary_statistics.update(self.label, np.asarray(rank[:, -1]))
 
     def per_train(self):
         # put model in training mode
-        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
+        if self.model_config['TYPE'] == 'vscnn_vgf':
             for _model in self.model.models:
                 _model.train()
         else:
             self.model.train()
-            
+
         self.adjust_lr()
         loader = self.data_loader['train']
         loss_value = []
-        
+
         for data, label_and_group in loader:
             # forward
-            # handling multiple modes in case of feature predictor for vscnn
-            if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-                # get data and prepare according to group
-                data = data.float()
-                label = label_and_group[0].long() # emotion label
-                group = label_and_group[1].long() # view angle group
-                loss = 0
-                # Train
-                for index in range(len(self.model.models)):
-                    # get index of specific group
-                    req_index = np.where(group == index)[0]
-                    if req_index.size > 0:
-                        # get data according to group
-                        group_data = data[req_index].to(self.cuda)
-                        group_label = label[req_index].to(self.cuda)
-                        # forward
-                        output = self.model.models[index](group_data)
-                        per_group_loss = self.loss(output, group_label)
-                        loss += per_group_loss
-                        # backward
-                        self.optimizer[index].zero_grad()
-                        per_group_loss.backward(retain_graph=True)
-                        self.optimizer[index].step()
+            # get data
+            data = data.float().to(self.cuda)
+            label = label_and_group[0].long()  # emotion label
+            group = label_and_group[1].long()  # view angle group
+            if len(self.model_config['TARGETS']) > 1:
+                label = (self.num_classes*label + group).to(self.cuda)
             else:
-                # get data
-                data = data.float().to(self.cuda)
-                label = label_and_group[0].long() # emotion label
-                group = label_and_group[1].long() # view angle group
-                if len(self.args['MODEL']['TARGETS']) > 1:
-                    label = (self.num_classes*label + group).to(self.cuda)
-                else:
-                    label = label.long().to(self.cuda)
-                
-                output = self.model(data)
-                loss = self.loss(output, label)
-                        
-                # backward
-                self.optimizer.zero_grad()
-                loss.backward(retain_graph=True)
-                self.optimizer.step()
+                label = label.long().to(self.cuda)
+
+            output = self.model(data)
+            loss = self.loss(output, label)
+
+            # backward
+            self.optimizer.zero_grad()
+            loss.backward(retain_graph=True)
+            self.optimizer.step()
 
             # statistics
-            
+
             self.iter_info['loss'] = loss.data.item()
             self.iter_info['lr'] = self.lr
             loss_value.append(self.iter_info['loss'])
             self.meta_info['iter'] += 1
             self.show_iter_info(mode='train')
-
 
         self.epoch_info['mean_loss'] = np.mean(loss_value)
         self.show_epoch_info(mode='train')
@@ -251,76 +233,46 @@ class Trainer(object):
 
     def per_test(self, evaluation=True):
         # put models in eval mode
-        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-                # put models in eval mode
-                for _model in self.model.models:
-                    _model.eval()
+        if self.model_config['TYPE'] == 'vscnn_vgf':
+            # put models in eval mode
+            for _model in self.model.models:
+                _model.eval()
         else:
             self.model.eval()
-            
+
         loader = self.data_loader['test']
         loss_value = []
         result_frag = []
         label_frag = []
         group_frag = []
-        
+
         self.summary_statistics.reset()
-                
+
         for data, label_and_group in loader:
-            if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-                # get data and prepare according to group
-                data = data.float()
-                label = label_and_group[0].long() # emotion label
-                group = label_and_group[1].long() # view angle group
-                # inference
-                with torch.no_grad():
-                    for index in range(len(self.model.models)):
-                        # get index of specific group
-                        req_index = np.where(group == index)[0]
-                        if req_index.size > 0:
-                            # get data according to group
-                            group_data = data[req_index].to(self.cuda)
-                            group_label = label[req_index].to(self.cuda)
-                            # inference
-                            output = self.model.models[index](group_data, apply_sfmax = True)
-                            result_frag.append(output.data.cpu().numpy())
-            
-                            # get loss
-                            if evaluation:
-                                loss = self.loss(output, group_label)
-                                loss_value.append(loss.item())
-                                label_frag.append(group_label.data.cpu().numpy())
-                                group_frag.append([index]*req_index.size)
-#                                self.summary_statistics.update(group_label.data.cpu().numpy(), 
-#                                                               output.data.cpu().numpy().astype(int))
-                                
-                    
+            # get data
+            data = data.float().to(self.cuda)
+            label = label_and_group[0].long()  # emotion label
+            group = label_and_group[1].long()  # view angle group
+            if len(self.model_config['TARGETS']) > 1:
+                label = (self.num_classes*label + group).to(self.cuda)
             else:
-                # get data
-                data = data.float().to(self.cuda)
-                label = label_and_group[0].long() # emotion label
-                group = label_and_group[1].long() # view angle group
-                if len(self.args['MODEL']['TARGETS']) > 1:
-                    label = (self.num_classes*label + group).to(self.cuda)
-                else:
-                    label = label.to(self.cuda)
-    
-                # inference
-                with torch.no_grad():
-                    output = self.model(data, apply_sfmax = True)
-                result_frag.append(output.data.cpu().numpy())
-                # get loss
-                if evaluation:
-                    loss = self.loss(output, label)
-                    loss_value.append(loss.item())
-                    label_frag.append(label.data.cpu().numpy())
-                    group_frag.append(group.data.cpu().numpy())
-#                    self.summary_statistics.update(label.data.cpu().numpy(), 
+                label = label.to(self.cuda)
+
+            # inference
+            with torch.no_grad():
+                output = self.model(data, apply_sfmax=False)
+            result_frag.append(output.data.cpu().numpy())
+            # get loss
+            if evaluation:
+                loss = self.loss(output, label)
+                loss_value.append(loss.item())
+                label_frag.append(label.data.cpu().numpy())
+                group_frag.append(group.data.cpu().numpy())
+#                    self.summary_statistics.update(label.data.cpu().numpy(),
 #                                                   output.data.cpu().numpy().astype(int))
-                    
-        
+
         self.result = np.concatenate(result_frag)
-        
+
         if evaluation:
             self.group = np.concatenate(group_frag)
             self.label = np.concatenate(label_frag)
@@ -346,93 +298,54 @@ class Trainer(object):
 
             # save model and weights
             if self.accuracy_updated:
-                if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-                    for idx in range(len(self.model.models)):
-                        torch.save({
-                                'epoch': epoch,
-                                'model_state_dict': self.model.models[idx].state_dict(),
-                                'optimizer_state_dict': self.optimizer[idx].state_dict(),
-                                'loss_value': self.epoch_info['mean_loss'],
-                                'loss': self.loss},
-                                os.path.join(self.args['WORK_DIR'],'mdl{}_epoch{}_acc{:.2f}_model.pth.tar'.format(idx, epoch, self.best_accuracy.item())))
-#                        torch.save(self.model.models[idx].state_dict(),
-#                            os.path.join(self.args['WORK_DIR'], 
-#                                            'mdl{}_epoch{}_acc{:.2f}_model.pth.tar'.format(idx, epoch, self.best_accuracy.item())))
-                else:
-                    
-                    torch.save({
-                                'epoch': epoch,
-                                'model_state_dict': self.model.state_dict(),
-                                'optimizer_state_dict': self.optimizer.state_dict(),
-                                'loss_value': self.epoch_info['mean_loss'],
-                                'loss': self.loss},
-                                os.path.join(self.args['WORK_DIR'],'mdl_epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
-                    
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                    'loss_value': self.epoch_info['mean_loss'],
+                    'loss': self.loss},
+                    os.path.join(self.args['WORK_DIR'], 'mdl_epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
+
 #                    torch.save(self.model.state_dict(),
 #                            os.path.join(self.args['WORK_DIR'],
 #                                            'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
 
                 if self.epoch_info['mean_loss'] < self.best_loss:
-                        self.best_loss = self.epoch_info['mean_loss']
-                        self.best_epoch = epoch
-        
+                    self.best_loss = self.epoch_info['mean_loss']
+                    self.best_epoch = epoch
+
         print('best epoch: {}'.format(self.best_epoch))
 
     def test(self):
         self.per_test()
         self.result_summary = self.summary_statistics.get_metrics()
         file_name = 'test_result'
-        save_file = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'.pkl') 
-        save_file_summary = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_summary.txt') 
-        save_file_confusion = os.path.join(self.args['RESULT_SAVE_DIR'], file_name+'_confusion.csv') 
-        np.savetxt(save_file_confusion, self.result_summary['conf_matrix'], delimiter = ',')
-        result_dict = dict(zip(self.label,self.result))
+        save_file = os.path.join(
+            self.args['RESULT_SAVE_DIR'], file_name+'.pkl')
+        save_file_summary = os.path.join(
+            self.args['RESULT_SAVE_DIR'], file_name+'_summary.txt')
+        save_file_confusion = os.path.join(
+            self.args['RESULT_SAVE_DIR'], file_name+'_confusion.csv')
+        np.savetxt(save_file_confusion,
+                   self.result_summary['conf_matrix'], delimiter=',')
+        result_dict = dict(zip(self.label, self.result))
         with open(save_file, 'wb') as handle:
             pickle.dump(result_dict, handle)
         with open(save_file_summary, 'w') as handle:
             handle.write(str(self.result_summary))
-            
+
     def load_model(self):
-        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-            for idx in range(len(self.model.models)):
-                
-                
-                path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
-                                      self.args['TEST'][f'MODEL_NAME_{idx}'])
-                
-                checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
-                try:
-                    self.model.models[idx].load_state_dict(checkpoint['model_state_dict'], strict=True)
-                    self.optimizer[idx].load_state_dict(checkpoint['optimizer_state_dict'])
-                    self.meta_info['epoch'] = checkpoint['epoch']
-                    self.epoch_info['mean_loss'] = checkpoint['loss_value']
-                    self.loss = checkpoint['loss']
-                except:
-                    self.model.models[idx].load_state_dict(checkpoint, strict=True)
-                self.model.models[idx].to(self.cuda)
-                self.model.models[idx].eval()
-        else:
-            
-            path = os.path.join(self.args['TEST']['MODEL_FOLDER'],
-                                  self.args['TEST'][f'MODEL_NAME'])
-            
-            checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
-            try:
-                self.model.load_state_dict(checkpoint['model_state_dict'], strict=True)
-                self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-                self.meta_info['epoch'] = checkpoint['epoch']
-                self.epoch_info['mean_loss'] = checkpoint['loss_value']
-                self.loss = checkpoint['loss']
-            except:
-                self.model.load_state_dict(checkpoint, strict=True)
-            self.model.to(self.cuda)
-            self.model.eval()                     
-        
-    def warm_start(self):
-        self.load_model()
-        self.test()
-        if self.args['MODEL']['TYPE'] == 'vscnn_vgf':
-            for idx in range(len(self.model.models)):
-                self.model.models[idx].train()
-        else:
-            self.model.train()
+        path = os.path.join(self.model_config['PRETRAIN_PATH'],
+                            self.model_config['PRETRAIN_NAME'])
+
+        checkpoint = torch.load(path, map_location=f'cuda:{self.cuda}')
+        try:
+            self.model.load_state_dict(
+                checkpoint['model_state_dict'], strict=True)
+            self.optimizer.load_state_dict(
+                checkpoint['optimizer_state_dict'])
+            self.meta_info['epoch'] = checkpoint['epoch']
+            self.epoch_info['mean_loss'] = checkpoint['loss_value']
+            self.loss = checkpoint['loss']
+        except:
+            self.model.load_state_dict(checkpoint, strict=True)

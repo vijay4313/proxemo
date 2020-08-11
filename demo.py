@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import os
 import argparse
 import numpy as np
 import cv2
 import torch
-
+from emotion_classification.utils.yaml_parser import yaml_parser
+from emotion_classification.runner.trainer import Trainer
 from pose_tracking.human_tracking_3D import Track_Human_Pose
 from emotion_classification.modeling.vs_gcnn import VSGCNN
 
@@ -37,12 +39,14 @@ def arg_parser():
     parser = argparse.ArgumentParser(
         description="Emotion Classification demo.")
 
-    parser.add_argument("-m", "--model", type=str,
-                        default="vsgcnn",
-                        help="Model to be used.")
-    parser.add_argument("-l", "--load_path", type=str,
-                        default="/home/emotiongroup/Desktop/models/vsgcnn_model.tar",
-                        help="Trained Model parameters path.")
+    parser.add_argument("-m", "--model",
+                        default="./emotion_classification/modeling/config/infer.yaml",
+                        help="Model config to be used.",
+                        type=os.path.abspath)
+    parser.add_argument("-l", "--load_path",
+                        default="models/vsgcnn_model.tar",
+                        help="Trained Model parameters path.",
+                        type=os.path.abspath)
     parser.add_argument("-i", "--input", type=str,
                         default="",
                         help="Path to bag files to run demo on.")
@@ -53,31 +57,16 @@ def arg_parser():
     return args
 
 
-def get_parameters(args):
-    params = []
-    if args.model == 'vsgcnn':
-        # def __init__(self, n_classes, in_channels, num_groups,
-        #              dropout=0.2, layer_channels=[32, 64, 16]):
-        params = [4, 3, 4, 0.2]
-    return params
-
-
-def load_model(model, load_path):
-    """Load model params from training."""
-    checkpoint = torch.load(load_path)
-    try:
-        model.load_state_dict(checkpoint['model_state_dict'], strict=True)
-    except:
-        model.load_state_dict(checkpoint, strict=True)
-    return model
-
+def get_model(config_file):
+    dir_path, filename = os.path.split(config_file)
+    config = yaml_parser(filename, dir_path)
+    model_config = config['MODEL']
+    model_obj = Trainer(None, None, model_config).model
+    return model_obj
 
 def main():
     args = arg_parser()
-    params = get_parameters(args)
-
-    model = MODEL_MAP[args.model](*params)
-    model = load_model(model, args.load_path)
+    model = get_model(args.model)
     model.to(args.cuda).eval()
 
     track_pose = Track_Human_Pose(display=True)
