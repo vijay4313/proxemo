@@ -31,8 +31,9 @@ The code is implemented in Python and has the following dependency:
 
 To run the demo with intel realsense D435 camera following libraries are required:
 
-1. pyrealsense2
-2. cubemos SDK (works with UBUNTU 18)
+1. opencv2
+2. pyrealsense2
+3. cubemos SDK (works with UBUNTU 18)
 
 ## Before running the code
 
