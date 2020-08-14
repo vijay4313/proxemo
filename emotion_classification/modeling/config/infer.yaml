@@ -1,5 +1,4 @@
-#
-#
+# General parameters
 GENERAL:
   MODE: 'inference' # train|test|inference
   OUTPUT_PATH: '../output_test'
@@ -32,7 +31,7 @@ MODEL:
   LAYER_CHANNELS: [32, 64, 16]
   PRETRAIN_PATH: '/scratch/emotiongroup/Training Runs IROS/Run 6/saved_models/vs_gcnn/29-02-2020-01-13-54'
   PRETRAIN_NAME: 'mdl_epoch16_acc81.89_model.pth.tar'
-#
+
 # Data params
 DATA:
   TYPE: 'multi_view'
