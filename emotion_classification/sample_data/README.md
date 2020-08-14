@@ -9,9 +9,9 @@ Of the 2,177 real gaits, 342 were collected by us and the remaining 1,835 were t
 All 342 real gaits we collected are stored in the file features.h5.
 All the 1,835 gaits taken from ELMD are stored in the file features_ELMD.h5.
 
-The format for each data file is T x V, where T is the number of 
+The format for each data file is T x V, where T is the number of
 time steps and V is the number of coordinate locations.
-T varies from file to file, V is fixed for all the files. 
+T varies from file to file, V is fixed for all the files.
 Specifically, each row of length V consists of the following entries in the given order:
 
 ```bash
@@ -35,7 +35,7 @@ Specifically, each row of length V consists of the following entries in the give
 The corresponding label for each data file in features.h5 is stored in labels.h5.
 The corresponding label for each data file in features_ELMD.h5 is stored in labels_ELMD.h5.
 
-The original multi-class labels for the ELMD dataset, provided by our ten annotators, is available in labels_edin_locomotion.zip. We have used these labels in our work "Take an Emotion Walk".
+The original multi-class labels for the ELMD dataset, provided by our ten annotators, is available in labels_edin_locomotion.zip. We have used these labels in our work "Proxemo".
 
 
 All synthetic gaits are in two parts in the two files features_CVAEGCN_1_2000.h5 and features_CVAEGCN_2001_4000.h5.
