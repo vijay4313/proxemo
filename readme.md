@@ -24,10 +24,15 @@ The network is trained on image embeddings of the 5D gait set G, which are scale
 
 ## Prerequisites
 
-The code is implemented in Python and has the following Dependency:
+The code is implemented in Python and has the following dependency:
 
 1. Python3
 2. Pytorch >= 1.4
+
+To run the demo with intel realsense D435 camera following libraries are required:
+
+1. pyrealsense2
+2. cubemos SDK (works with UBUNTU 18)
 
 ## Before running the code
 
@@ -65,12 +70,11 @@ DATA : LABELS_FILE : <path to lables file>
 
 ## Running the code
 
-Clone the repo and run with default settings
+Clone the repo
 
 ```bash
 git clone -b inference https://github.com/vijay4313/emotion-bot.git
 cd <proxemo directory>
-python3 main.py
 ```
 
 All the settings are configured as yaml file from *[proxemo folder]/emotion_classification/modeling/config*. We have provided two settings file one for inference and one to train the model.
@@ -79,6 +83,12 @@ To run the code with specific settings file, run the below command
 
 ```bash
 python3 main.py --settings infer
+```
+
+To run the demo, connect intel realsense D435 camera with above mentioned pre requsites and execute below command
+
+```bash
+python3 demo.py --model ./emotion_classification/modeling/config/infer.yaml
 ```
 
 ## Links
