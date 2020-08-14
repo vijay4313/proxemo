@@ -13,6 +13,11 @@ sys.path.append("../")
 # Load settings
 
 def arg_parser():
+    """CLI arg parser.
+
+    Returns:
+        [dict]: CLI args
+    """
     parser = argparse.ArgumentParser(description='Proxemo Runner')
     parser.add_argument('--settings', type=str, default='infer', metavar='s',
                         help='config file for running the network.')
@@ -22,7 +27,9 @@ def arg_parser():
 
     return args
 
+
 def main():
+    """Main routine."""
     args = arg_parser()
     gen_args, model_args, data_args = args.values()
     # Build model
@@ -33,6 +40,7 @@ def main():
 
     elif args['MODE'] == 'test':
         model.test()
+
 
 if __name__ == '__main__':
     main()

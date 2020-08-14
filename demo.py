@@ -36,6 +36,7 @@ EMOTION_MAP = {
 
 
 def arg_parser():
+    """CLI arg parser."""
     parser = argparse.ArgumentParser(
         description="Emotion Classification demo.")
 
@@ -58,13 +59,16 @@ def arg_parser():
 
 
 def get_model(config_file):
+    """Get a Model from config file."""
     dir_path, filename = os.path.split(config_file)
     config = yaml_parser(filename, dir_path)
     model_config = config['MODEL']
     model_obj = Trainer(None, None, model_config).model
     return model_obj
 
+
 def main():
+    """Main demo routine."""
     args = arg_parser()
     model = get_model(args.model)
     model.to(args.cuda).eval()

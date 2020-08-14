@@ -40,5 +40,5 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/labels_*.h5'
+  FEATURES_FILE: 'sample_data/sample_features.h5'
+  LABELS_FILE: 'sample_data/sample_lables.h5'

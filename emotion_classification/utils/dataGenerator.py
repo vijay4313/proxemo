@@ -14,6 +14,19 @@ from transform3DPose import augment3D
 
 
 def readDataSingleGait(_path, _ftype, coords, joints, cycles=3, dataSetNumber=0):
+    """Reads a single gait sequence file.
+
+    Args:
+        _path (str): path to h5 file
+        _ftype (str): Dataset sub-type
+        coords (int): Number of co-ordinates representing each joint in gait cycle
+        joints (int)): Number of joints in the gait sequence
+        cycles (int, optional): Time duration of gait cycle. Defaults to 3.
+        dataSetNumber (int, optional): [description]. Defaults to 0.
+
+    Returns:
+        [type]: [description]
+    """
     file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
     ff = h5py.File(file_feature, 'r')
     file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
@@ -32,6 +45,19 @@ def readDataSingleGait(_path, _ftype, coords, joints, cycles=3, dataSetNumber=0)
 
 
 def generateDataSet(_path, _ftype, _dpath, coords, joints, cycles=3, angles=0, trans=0):
+    """[summary]
+
+    Args:
+        _path (str): path to h5 file
+        _ftype (str): Dataset sub-type
+        _dpath (str): sub-directory path to augmented data
+        coords (int): Number of co-ordinates representing each joint in gait cycle
+        joints (int)): Number of joints in the gait sequence
+        cycles (int, optional): Time duration of gait cycle. Defaults to 3.
+        angles (int/list, optional): List of all augmented angles. Defaults to 0.
+        trans (int/list, optional): Transition matrix to be applied for reference change.
+                               Defaults to 0.
+    """
     file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
     ff = h5py.File(file_feature, 'r')
     file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
