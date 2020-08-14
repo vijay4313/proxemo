@@ -71,11 +71,24 @@ DATA : LABELS_FILE : <path to lables file>
 
 ## Running the code
 
-Clone the repo
+Clone the repo.
 
 ```bash
-git clone -b inference https://github.com/vijay4313/emotion-bot.git
+git clone https://github.com/vijay4313/emotion-bot.git
 cd <proxemo directory>
+```
+
+Find the latest release tag from [released versions](https://github.com/vijay4313/emotion-bot/releases) and checkout the latest release.
+
+```bash
+git checkout tags/<latest_tag_name>
+```
+
+example
+
+```bash
+git fetch --all --tags
+git checkout tags/v1.0.0
 ```
 
 All the settings are configured as yaml file from *[proxemo folder]/emotion_classification/modeling/config*. We have provided two settings file one for inference and one to train the model.
