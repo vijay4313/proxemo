@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 25 16:32:39 2019
-
-@author: bala
-
-data augmentation
-"""
-
+#!/usr/bin/env python
+# Title           :loader.py
+# Author          :Venkatraman Narayanan, Bala Murali Manoghar, Vishnu Shashank Dorbala, Aniket Bera, Dinesh Manocha
+# Copyright       :"Copyright 2020, Proxemo project"
+# Version         :1.0
+# License         :"MIT"
+# Maintainer      :Venkatraman Narayanan, Bala Murali Manoghar
+# Email           :vnarayan@terpmail.umd.edu, bsaisudh@terpmail.umd.edu
+#==============================================================================
 import numpy as np
 
 
