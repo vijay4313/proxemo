@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
-
+#!/usr/bin/env python
+# Title           :loader.py
+# Author          :Venkatraman Narayanan, Bala Murali Manoghar, Vishnu Shashank Dorbala, Aniket Bera, Dinesh Manocha
+# Copyright       :"Copyright 2020, Proxemo project"
+# Version         :1.0
+# License         :"MIT"
+# Maintainer      :Venkatraman Narayanan, Bala Murali Manoghar
+# Email           :vnarayan@terpmail.umd.edu, bsaisudh@terpmail.umd.edu
+# ==============================================================================
 import cv2
 import numpy as np
 
@@ -8,18 +15,39 @@ from pose_tracking.cubemos_wrapper import Cubemos_Tacker
 
 
 class Skel_Temporal():
+    """Skeleton gait generator class."""
+
     def __init__(self, skel_id, do_not_ignore_false_limbs=True):
+        """Constructor
+
+        Args:
+            skel_id (int): Skeleton ID
+            do_not_ignore_false_limbs (bool, optional): Ignore false limbs?. Defaults to True.
+        """
         self.id = skel_id
         self.skel_temporal = []
         self.do_not_ignore_false_limbs = do_not_ignore_false_limbs
 
     def add(self, skel_ti):
+        """Add skeleton to tracking.
+
+        Args:
+            skel_ti (np.array): skeleton co-ordinates
+        """
         if not np.any(skel_ti == -1) or self.ignore_false_limbs:
             if len(self.skel_temporal) > 75:
                 self.skel_temporal.pop(0)
             self.skel_temporal.append(skel_ti)
 
     def __eq__(self, other):
+        """Skeleton compare
+
+        Args:
+            other (obj): Skeleton Object
+
+        Returns:
+            [bool]: Same/different skeleton
+        """
         try:
             if self.id == other.id:
                 return True
@@ -32,6 +60,11 @@ class Skel_Temporal():
                 return False
 
     def get_embedding(self):
+        """Convert Temporal gait cycle to Image sequence.
+
+        Returns:
+            [np.array]: Gait cycle embedded as image
+        """
         skel_temporal_np = np.array(self.skel_temporal)
         # make root as (0, 0, 0)
         # even if number of frames is less than 75 it will be resized to 244*244
@@ -42,12 +75,25 @@ class Skel_Temporal():
 
 
 class Skel_Tracker():
+    """Skeleton Tracking Class."""
+
     def __init__(self, do_not_ignore_false_limbs=True):
+        """Constructor.
+
+        Args:
+            do_not_ignore_false_limbs (bool, optional): Ignore false limbs?. Defaults to True.
+        """
         self.skel_tracks = []
         self.img_embeddings = []
         self.do_not_ignore_false_limbs = do_not_ignore_false_limbs
 
     def update(self, skel_nps, skel_ids):
+        """Add skeleton pose to sequence.
+
+        Args:
+            skel_nps (np.array): Skeleton co-ordinates
+            skel_ids (list): Skeleton IDs
+        """
         # add skeleton corresponding to id
         for skel_np, skel_id in zip(skel_nps, skel_ids):
             try:
@@ -75,6 +121,11 @@ class Skel_Tracker():
             self.skel_tracks.pop(value - ndx)
 
     def get_embedding(self):
+        """Generate image embedding for entire gait sequence.
+
+        Returns:
+            [list]: image embeddings, skeleton IDs
+        """
         self.img_embeddings = []
         ids = []
         for skel_track in self.skel_tracks:
@@ -84,6 +135,7 @@ class Skel_Tracker():
         return self.img_embeddings, ids
 
     def display_embedding(self):
+        """View image embeddings."""
         imgs = self.img_embeddings[0]  # np.empty((244,244,3))
         print(self.img_embeddings.shape)
         for img in self.img_embeddings[1:]:
@@ -94,7 +146,15 @@ class Skel_Tracker():
 
 
 class Track_Human_Pose():
+    """Main gait tracking loop."""
+
     def __init__(self, display=True, verbose=True):
+        """Constructor.
+
+        Args:
+            display (bool, optional): Show skeleton detections?. Defaults to True.
+            verbose (bool, optional): Generate verbose log?. Defaults to True.
+        """
         self.verbose = verbose
         self.display = display
 
@@ -104,6 +164,7 @@ class Track_Human_Pose():
         self.skel_tracker = Skel_Tracker()
 
     def get_pose(self):
+        """Get human skeletons."""
         # capture
         self.camera.capture()
         # get skeletons
@@ -121,10 +182,12 @@ class Track_Human_Pose():
             cv2.imshow('RealSense', images)
 
     def track_pose(self):
+        """Track skeleton gaits."""
         self.skel_tracker.update(self.cubemos.skel3d_np,
                                  self.cubemos.skel_ids)
 
     def cleanup(self):
+        """Cleanup workspace setup."""
         self.camera.cleanup()
 
 

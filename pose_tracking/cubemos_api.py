@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
-
+#!/usr/bin/env python
+# Title           :loader.py
+# Author          :Venkatraman Narayanan, Bala Murali Manoghar, Vishnu Shashank Dorbala, Aniket Bera, Dinesh Manocha
+# Copyright       :"Copyright 2020, Proxemo project"
+# Version         :1.0
+# License         :"MIT"
+# Maintainer      :Venkatraman Narayanan, Bala Murali Manoghar
+# Email           :vnarayan@terpmail.umd.edu, bsaisudh@terpmail.umd.edu
+# ==============================================================================
 import argparse
 import os
 import platform
@@ -28,6 +35,14 @@ keypoint_ids = [
 
 
 def default_log_dir():
+    """Get default cubemos log dir.
+
+    Raises:
+        Exception: Works only on Windows/Linux
+
+    Returns:
+        [str]: Default log directory
+    """
     if platform.system() == "Windows":
         return os.path.join(os.environ["LOCALAPPDATA"], "Cubemos", "SkeletonTracking", "logs")
     elif platform.system() == "Linux":
@@ -37,6 +52,14 @@ def default_log_dir():
 
 
 def default_license_dir():
+    """Get license file location.
+
+    Raises:
+        Exception: Works only on Windows/Linux
+
+    Returns:
+        [str]: License file directory
+    """
     if platform.system() == "Windows":
         return os.path.join(os.environ["LOCALAPPDATA"], "Cubemos", "SkeletonTracking", "license")
     elif platform.system() == "Linux":
@@ -46,6 +69,7 @@ def default_license_dir():
 
 
 def check_license_and_variables_exist():
+    """Check license file."""
     license_path = os.path.join(default_license_dir(), "cubemos_license.json")
     if not os.path.isfile(license_path):
         raise Exception(
@@ -57,13 +81,24 @@ def check_license_and_variables_exist():
         raise Exception(
             "The environment Variable \"CUBEMOS_SKEL_SDK\" is not set. "
             "Please check the troubleshooting section in the Getting "
-            "Started Guide to resolve this issue." 
+            "Started Guide to resolve this issue."
         )
 
 
 def get_valid_limbs(keypoint_ids, skeleton, confidence_threshold):
+    """Extract limbs based on confidence
+
+    Args:
+        keypoint_ids (list(tuple)): Joint ID pair (limbs)
+        skeleton (obj): Skeleton joint points
+        confidence_threshold (float): Threshold
+
+    Returns:
+        [lsit]: valid limbs (connections)
+    """
     limbs = [
-        (tuple(map(int, skeleton.joints[i])), tuple(map(int, skeleton.joints[v])))
+        (tuple(map(int, skeleton.joints[i])),
+         tuple(map(int, skeleton.joints[v])))
         for (i, v) in keypoint_ids
         if skeleton.confidences[i] >= confidence_threshold
         and skeleton.confidences[v] >= confidence_threshold
@@ -77,6 +112,13 @@ def get_valid_limbs(keypoint_ids, skeleton, confidence_threshold):
 
 
 def render_result(skeletons, img, confidence_threshold):
+    """Generate skeleton overlay on image (inplace).
+
+    Args:
+        skeletons (dict): skeleton joint co-ordinates
+        img (np.array): source image
+        confidence_threshold (float): Threshold
+    """
     skeleton_color = (100, 254, 213)
     for index, skeleton in enumerate(skeletons):
         limbs = get_valid_limbs(keypoint_ids, skeleton, confidence_threshold)
@@ -84,27 +126,3 @@ def render_result(skeletons, img, confidence_threshold):
             cv2.line(
                 img, limb[0], limb[1], skeleton_color, thickness=2, lineType=cv2.LINE_AA
             )
-
-# parser = argparse.ArgumentParser(description="Perform keypoing estimation on an image")
-# parser.add_argument(
-#     "-c",
-#     "--confidence_threshold",
-#     type=float,
-#     default=0.5,
-#     help="Minimum confidence (0-1) of displayed joints",
-# )
-# parser.add_argument(
-#     "-v",
-#     "--verbose",
-#     action="store_true",
-#     help="Increase output verbosity by enabling backend logging",
-# )
-
-# parser.add_argument(
-#     "-o",
-#     "--output_image",
-#     type=str,
-#     help="filename of the output image",
-# )
-
-# parser.add_argument("image", metavar="I", type=str, help="filename of the input image")

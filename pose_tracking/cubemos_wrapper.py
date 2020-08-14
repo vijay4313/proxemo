@@ -1,6 +1,12 @@
-#!/usr/bin/env python3
-
-# cubemos init
+#!/usr/bin/env python
+# Title           :loader.py
+# Author          :Venkatraman Narayanan, Bala Murali Manoghar, Vishnu Shashank Dorbala, Aniket Bera, Dinesh Manocha
+# Copyright       :"Copyright 2020, Proxemo project"
+# Version         :1.0
+# License         :"MIT"
+# Maintainer      :Venkatraman Narayanan, Bala Murali Manoghar
+# Email           :vnarayan@terpmail.umd.edu, bsaisudh@terpmail.umd.edu
+# ==============================================================================
 import os
 import numpy as np
 import cv2
@@ -37,7 +43,15 @@ from cubemos_api import default_log_dir,\
 
 
 class Cubemos_Tacker():
+    """Cubemos skeletal tracker class."""
+
     def __init__(self, intrinsics, verbose=False):
+        """Constructor.
+
+        Args:
+            intrinsics (np.array): Camera instrinsics matrix
+            verbose (bool, optional): Verbose log. Defaults to False.
+        """
         self.verbose = verbose
         self.intrinsics = intrinsics
         self.confidence_threshold = 0.3
@@ -54,6 +68,7 @@ class Cubemos_Tacker():
         self.init_cubemos_api()
 
     def init_skel_track(self):
+        """Skeleton tracking initializer."""
         check_license_and_variables_exist()
         # Get the path of the native libraries and ressource files
         self.sdk_path = os.environ["CUBEMOS_SKEL_SDK"]
@@ -64,6 +79,7 @@ class Cubemos_Tacker():
                                default_log_dir())
 
     def init_cubemos_api(self):
+        """Setup cubemos API."""
         # initialize the api with a valid license key in default_license_dir()
         self.api = Api(default_license_dir())
         model_path = os.path.join(self.sdk_path,
@@ -74,6 +90,12 @@ class Cubemos_Tacker():
         self.api.load_model(CM_TargetComputeDevice.CM_CPU, model_path)
 
     def track_skeletons(self, image, depth_image):
+        """Track skeleton from image frame to deptg frame.
+
+        Args:
+            image (np.array): RGB image
+            depth_image (np.array): depth image
+        """
         # perform inference
         self.skeletons = self.api.estimate_keypoints(
             image, self.network_height)
@@ -88,6 +110,11 @@ class Cubemos_Tacker():
         self.skel2D_to_skel3D(depth_image)
 
     def render_skeletons(self, image):
+        """Overlay detected skeleton on image.
+
+        Args:
+            image (np.array): RGB image
+        """
         render_result(self.skeletons, image, self.confidence_threshold)
         for skel_num, joints in enumerate(self.skel3d_np):
             for joint_ndx, pt_3D in enumerate(joints[[0, -1]]):
@@ -115,6 +142,15 @@ class Cubemos_Tacker():
                            2, (255, 0, 255), -1)
 
     def map_2D_3D(self, pixel, depth):
+        """Match camera frame to depth frame
+
+        Args:
+            pixel (np.array): pixel co-ordinates
+            depth (np.array): depth co-ordinates
+
+        Returns:
+            [np.array]: 3D point co-ordinates
+        """
         x = (pixel[0] - self.intrinsics.ppx) / self.intrinsics.fx
         y = (pixel[1] - self.intrinsics.ppy) / self.intrinsics.fy
 
@@ -139,6 +175,11 @@ class Cubemos_Tacker():
         return (X, Y, Z)
 
     def skel2D_to_skel3D(self, depth_image):
+        """Convert a 2D skeleton in Camera frame to 3D co-ordinates.
+
+        Args:
+            depth_image (np.array): depth image
+        """
         self.skel_ids = []
         self.skel3d_np = []
         self.roots_2d = []

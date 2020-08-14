@@ -1,12 +1,27 @@
-#!/usr/bin/env python3
-
+#!/usr/bin/env python
+# Title           :loader.py
+# Author          :Venkatraman Narayanan, Bala Murali Manoghar, Vishnu Shashank Dorbala, Aniket Bera, Dinesh Manocha
+# Copyright       :"Copyright 2020, Proxemo project"
+# Version         :1.0
+# License         :"MIT"
+# Maintainer      :Venkatraman Narayanan, Bala Murali Manoghar
+# Email           :vnarayan@terpmail.umd.edu, bsaisudh@terpmail.umd.edu
+# ==============================================================================
 import pyrealsense2 as rs
 import numpy as np
 import cv2
 
 
 class Real_Sense_Camera():
+    """Real sense camera interface class."""
+
     def __init__(self, clipping_distance_meters, kernel_size):
+        """Constructor.
+
+        Args:
+            clipping_distance_meters (float): Max depth set for detection
+            kernel_size (int): Noise removal kernel size (average filter)
+        """
         #  clipping_distance_in_meters meters away
         self.init_camera()
         self.set_clipping_distance(clipping_distance_meters)
@@ -14,10 +29,16 @@ class Real_Sense_Camera():
             (kernel_size, kernel_size), np.float32)/(kernel_size**2)
 
     def set_clipping_distance(self, clipping_distance_meters):
+        """Set clipping distance parameter.
+
+        Args:
+            clipping_distance_meters (float): Max depth set for detection
+        """
         # We will be removing the background of objects more than
         self.clipping_distance = clipping_distance_meters / self.depth_scale
 
     def init_camera(self):
+        """Setup camera."""
         # Configure depth and color streams
         self.pipeline = rs.pipeline()
         self.config = rs.config()
@@ -45,9 +66,11 @@ class Real_Sense_Camera():
             get_intrinsics()
 
     def cleanup(self):
+        """End camera capture."""
         self.pipeline.stop()
 
     def capture(self):
+        """Capture camera frames."""
         while True:
             # Wait for a coherent pair of frames: depth and color
             frames = self.pipeline.wait_for_frames()
@@ -65,7 +88,7 @@ class Real_Sense_Camera():
             if not depth_frame \
                 or not color_frame \
                     or not aligned_depth_frame \
-                or not color_frame_align:
+            or not color_frame_align:
                 continue
 
             # Convert images to numpy arrays
@@ -93,27 +116,3 @@ class Real_Sense_Camera():
             self.depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.03),
                                                     cv2.COLORMAP_JET)
             break
-
-    def map_2D_3D(pixel, depth):
-        x = (pixel[0] - self.intrinsics.ppx) / self.intrinsics.fx
-        y = (pixel[1] - self.intrinsics.ppy) / self.intrinsics.fy
-
-        r2 = x * x + y * y
-        f = 1 + self.intrinsics.coeffs[0] * r2 + \
-            self.intrinsics.coeffs[1] * r2 * r2 + \
-            self.intrinsics.coeffs[4] * r2 * r2 * r2
-
-        ux = x * f + 2 * self.intrinsics.coeffs[2] * x * y + \
-            self.intrinsics.coeffs[3] * (r2 + 2 * x * x)
-
-        uy = y * f + 2 * self.intrinsics.coeffs[3] * x * y + \
-            self.intrinsics.coeffs[2] * (r2 + 2 * y * y)
-
-        x = ux
-        y = uy
-
-        X = depth * x
-        Y = depth * y
-        Z = depth
-
-        return (X, Y, Z)
