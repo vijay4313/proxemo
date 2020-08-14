@@ -14,7 +14,7 @@ sys.path.append("../")
 
 def arg_parser():
     parser = argparse.ArgumentParser(description='Proxemo Runner')
-    parser.add_argument('--settings', type=str, default='stgcn', metavar='s',
+    parser.add_argument('--settings', type=str, default='infer', metavar='s',
                         help='config file for running the network.')
     cli_args = parser.parse_args()
 
@@ -34,5 +34,5 @@ def main():
     elif args['MODE'] == 'test':
         model.test()
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     main()
