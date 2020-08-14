@@ -25,22 +25,23 @@ MODEL_TYPE = {
 
 
 class Trainer(object):
-    """[summary]
-
-    Args:
-        object ([type]): [description]
-
-    Raises:
-        ValueError: [description]
-    """
+    """Training manager class."""
 
     def __init__(self, gen_args, data_config, model_config):
+        """Constructor.
 
+        Args:
+            gen_args (dict): General training args
+            data_config (dict): Data args
+            model_config (dict): Model args
+            Refer modeling/config/train.yaml for details.
+        """
         self.args = gen_args
         self.data_config = data_config
         self.model_config = model_config
 
         self.num_classes = model_config['NUM_CLASSES']
+        self.num_viewgroups = model_config['NUM_GROUPS']
         self.result = dict()
         self.iter_info = dict()
         self.epoch_info = dict()
@@ -53,6 +54,7 @@ class Trainer(object):
         self.setup()
 
     def setup(self):
+        """Setup train/test routine."""
         now = datetime.now().strftime('%d-%m-%Y-%H-%M-%S')
         log_dir = os.path.join(self.args['OUTPUT_PATH'],
                                'logs', self.model_config['TYPE'], now)
@@ -67,7 +69,8 @@ class Trainer(object):
         self.create_working_dir(self.args['RESULT_SAVE_DIR'])
         self.model_config['PRETRAIN_PATH'] = self.args['WORK_DIR']
 
-        all_args = {'GENERAL': self.args, 'MODEL': self.model_config, 'DATA': self.data_config}
+        all_args = {'GENERAL': self.args,
+                    'MODEL': self.model_config, 'DATA': self.data_config}
 
         with open(os.path.join(self.args['WORK_DIR'], 'settings.yaml'), 'w') as file:
             yaml.dump(all_args, file)
@@ -79,7 +82,10 @@ class Trainer(object):
             test_size = 0.99
 
         if isinstance(self.data_config, dict):
-            self.data_loader = data_loader_base(self.args, self.data_config, test_size)
+            self.data_loader, num_classes, num_viewgroups = data_loader_base(
+                self.args, self.data_config, test_size)
+            self.num_classes = num_classes if num_classes is not None else self.num_classes
+            self.num_viewgroups = num_viewgroups if num_viewgroups is not None else self.num_viewgroups
         elif self.data_config is not None:
             self.data_loader = self.data_config
 
@@ -93,15 +99,25 @@ class Trainer(object):
             self.summary_statistics = SummaryStatistics(self.num_classes)
 
     def create_working_dir(self, dir_name):
+        """Create folder under given path.
+
+        Args:
+            dir_name (str): Directory path to be created
+        """
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
     def build_model(self, model_kwargs):
+        """Build the necessary model.
+
+        Args:
+            model_kwargs (dict): model args
+        """
         # model parameters
         if model_kwargs['TYPE'] == 'vs_gcnn':
             params = [self.num_classes,
                       model_kwargs['IN_CHANNELS'],
-                      model_kwargs['NUM_GROUPS'],
+                      self.num_viewgroups,
                       model_kwargs['DROPOUT'],
                       model_kwargs['LAYER_CHANNELS']
                       ]
@@ -128,8 +144,8 @@ class Trainer(object):
             self.load_model()
 
     def adjust_lr(self):
-
-        # if self.args.optimizer == 'SGD' and\
+        """Adjust the learning rate.
+        """
         if self.meta_info['epoch'] in self.step_epochs:
             lr = self.model_config['OPTIMIZER']['LR'] * (
                 0.1 ** np.sum(self.meta_info['epoch'] >= self.step_epochs))
@@ -138,6 +154,11 @@ class Trainer(object):
             self.lr = lr
 
     def show_epoch_info(self, mode):
+        """Generate summary for a epoch.
+
+        Args:
+            mode (str): train/test
+        """
         print_str = ''
         for k, v in self.epoch_info.items():
             self.logger.add_scalar(
@@ -153,6 +174,11 @@ class Trainer(object):
                                                           info=print_str))
 
     def show_iter_info(self, mode):
+        """Generate summary for an iteration.
+
+        Args:
+            mode (str): train/test
+        """
         info = ''
         for k, v in self.iter_info.items():
             self.logger.add_scalar(
@@ -168,7 +194,11 @@ class Trainer(object):
                                                         info=info))
 
     def show_topk(self, k):
+        """Show Top-k accuracy.
 
+        Args:
+            k (int): rank factor
+        """
         rank = self.result.argsort()
         hit_top_k = [l in rank[i, -k:] for i, l in enumerate(self.label)]
         accuracy = 100. * sum(hit_top_k) * 1.0 / len(hit_top_k)
@@ -185,6 +215,7 @@ class Trainer(object):
         self.summary_statistics.update(self.label, np.asarray(rank[:, -1]))
 
     def per_train(self):
+        """Run a single training loop."""
         # put model in training mode
         if self.model_config['TYPE'] == 'vscnn_vgf':
             for _model in self.model.models:
@@ -232,6 +263,11 @@ class Trainer(object):
         # self.model.extract_feature()
 
     def per_test(self, evaluation=True):
+        """Run a single test loop.
+
+        Args:
+            evaluation (bool, optional): Evaluation/Inference. Defaults to True.
+        """
         # put models in eval mode
         if self.model_config['TYPE'] == 'vscnn_vgf':
             # put models in eval mode
@@ -284,6 +320,7 @@ class Trainer(object):
                 self.show_topk(k)
 
     def train(self):
+        """Perform training routine."""
 
         for epoch in range(self.args['START_EPOCH'], self.args['EPOCHS']):
             self.meta_info['epoch'] = epoch
@@ -317,6 +354,7 @@ class Trainer(object):
         print('best epoch: {}'.format(self.best_epoch))
 
     def test(self):
+        """Perform Test routine."""
         self.per_test()
         self.result_summary = self.summary_statistics.get_metrics()
         file_name = 'test_result'
@@ -335,6 +373,7 @@ class Trainer(object):
             handle.write(str(self.result_summary))
 
     def load_model(self):
+        """Load pretrained weights for model."""
         path = os.path.join(self.model_config['PRETRAIN_PATH'],
                             self.model_config['PRETRAIN_NAME'])
 

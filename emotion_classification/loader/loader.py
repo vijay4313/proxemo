@@ -12,6 +12,19 @@ import torch
 
 
 def load_data(_path_features, _path_lables, coords, joints, cycles=3, test_size=0.1):
+    """Generate train/test data from single-view gait cycles.
+
+    Args:
+        _path_features (str): Path to gait sequence file
+        _path_lables (str): Path to labels of corresponding gait sequence
+        coords (int): Number of co-ordinates representing each joint in gait cycle
+        joints (int)): Number of joints in the gait sequence
+        cycles (int, optional): Time duration of gait cycle. Defaults to 3.
+        test_size (float, optional): Ratio of test data. Defaults to 0.1.
+
+    Returns:
+        [list]: train and test data
+    """
     # file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
     # file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
     ff = h5py.File(_path_features, 'r')
@@ -43,6 +56,19 @@ def load_data(_path_features, _path_lables, coords, joints, cycles=3, test_size=
 
 
 def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, test_size=0.1):
+    """Generate multi-view train/test data from gait cycles.
+
+    Args:
+        _path_features (str): Path to gait sequence file
+        _path_lables (str): Path to labels of corresponding gait sequence
+        coords (int): Number of co-ordinates representing each joint in gait cycle
+        joints (int)): Number of joints in the gait sequence
+        cycles (int, optional): Time duration of gait cycle. Defaults to 3.
+        test_size (float, optional): Ratio of test data. Defaults to 0.1.
+
+    Returns:
+        [list]: train and test data
+    """
     feature_files = glob.glob(_path_features)
     label_files = glob.glob(_path_lables)
     print(f'---> Number of files = {len(feature_files)}')
@@ -103,6 +129,14 @@ def load_data_multiview(_path_features, _path_lables, coords, joints, cycles=3, 
 
 
 def scale(_data):
+    """Normalise the input data.
+
+    Args:
+        _data (np.array): Data to be normalized
+
+    Returns:
+        [list]: Scaled data with max and min info
+    """
     data_scaled = _data.astype('float32')
     data_max = np.max(data_scaled)
     data_min = np.min(data_scaled)
@@ -112,18 +146,47 @@ def scale(_data):
 
 # descale generated data
 def descale(data, data_max, data_min):
+    """Reverse normalization
+
+    Args:
+        data (np.array): Normalized data
+        data_max (float): max value before normalization
+        data_min (float): min value before normalization
+
+    Returns:
+        [np.array]: Reverse-Normalized data
+    """
     data_descaled = data*(data_max-data_min)+data_min
     return data_descaled
 
 
 def to_categorical(y, num_classes):
-    """ 1-hot encodes a tensor """
+    """1-hot encodes a tensor.
+
+    Args:
+        y (np.array): 1-D array with numerical class ID
+        num_classes (int): Number of classes
+
+    Returns:
+        [np.array]: One-hot encoded array
+    """
     return np.eye(num_classes, dtype='uint8')[y]
 
 
 class TrainTestLoader(torch.utils.data.Dataset):
+    """Create torch dataset object from gait cycle data."""
 
     def __init__(self, data, label, joints, coords, num_classes):
+        """Initialize the dataloader.
+
+        Args:
+            data (np.array): gait cycles
+            label (np.array): emotion class 1-hot vector
+            joints (int): Number of joints in gait cycles
+            coords (int): Number of co-ordinates
+                          representing each joint (2D/3D)
+            num_classes (int): Number of emotion classes
+        """
         # data: N C T J
         self.data = data
 
@@ -134,9 +197,15 @@ class TrainTestLoader(torch.utils.data.Dataset):
         self.coords = coords
 
     def __len__(self):
+        """Return dataset size."""
         return len(self.label)
 
     def _convert_skeletion_to_image(self, data_numpy):
+        """Convert gait cycle into image sequence.
+
+        Args:
+            data_numpy (np.array): Gait sequence data
+        """
         # (1, 3, 75, 16, 1)
         data_numpy = np.squeeze(data_numpy, axis=0)
         data_max = np.max(data_numpy, (1, 2, 3))
@@ -152,20 +221,19 @@ class TrainTestLoader(torch.utils.data.Dataset):
         img_data[:, :, 2] = (data_max[2] - data_numpy[2, :, :, 0]
                              ) * (255 / (data_max[2] - data_min[2]))
 
-#        img_data[:,:,0] = np.divide(img_data[:,:,0], img_data[:,:,2]+1e-9)
-#        img_data[:,:,1] = np.divide(img_data[:,:,1], img_data[:,:,2]+1e-9)
-#        img_data[:,:,2] = np.divide(img_data[:,:,2], img_data[:,:,2]+1e-9)
-
         img_data = cv2.resize(img_data, (244, 244))
-
-#        cv2.imshow("testframe", img_data)
-#        cv2.waitKey(10)
-#        cv2.imwrite(f"../temp/{np.random.randint(low=1, high=100)}.png",
-#                               img_data)
 
         return img_data
 
     def __getitem__(self, index):
+        """Get data & label pair for each gait cycle.
+
+        Args:
+            index (int): Sequence number to retrieve
+
+        Returns:
+            [list]: gait cycle and emotion label pair
+        """
 
         # data: N C T J
         data_numpy = np.asarray(self.data[index])
@@ -184,6 +252,18 @@ class TrainTestLoader(torch.utils.data.Dataset):
 
 
 def data_loader_base(gen_args, data_args, test_size=0.1):
+    """Main data loader function.
+
+    Args:
+        gen_args (dict): Basic training scheme args
+                         (check modeling/config/train.yaml file)
+        data_args (dict): Dataset specific arguments
+        test_size (float, optional): Ratio of test data. Defaults to 0.1.
+
+    Returns:
+        [list]: torch dataset object, number of emotion classes,
+                number of view angle groups (multi-view)
+    """
     num_classes_label = None
     num_classes_angles = None
     if data_args['TYPE'] == 'single_view':
@@ -237,4 +317,4 @@ def data_loader_base(gen_args, data_args, test_size=0.1):
             num_workers=gen_args['NUM_WORKERS'],
             drop_last=True)}
 
-    return (data_loader_train_test, num_classes_label, num_classes_angles)
+    return data_loader_train_test, num_classes_label, num_classes_angles
