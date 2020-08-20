@@ -1,3 +1,5 @@
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/proxemo-gait-based-emotion-learning-and-multi/emotion-classification-on-ewalk)](https://paperswithcode.com/sota/emotion-classification-on-ewalk?p=proxemo-gait-based-emotion-learning-and-multi)
+
 # ProxEmo: Gait-based Emotion Learning and Multi-view Proxemic Fusion for Socially-Aware Robot Navigation
 
 ProxEmo is a novel end-to-end emotion prediction algorithm for socially aware robot navigation among pedestrians. The approach predicts the perceived emotions of a pedestrian from walking gaits, which is then used for emotion-guided navigation taking into account social and proxemic constraints. Multi-view skeleton graph convolution-based model uses commodity camera mounted onto a moving robot to classify emotions. Our emotion recognition is integrated into a mapless navigation scheme and makes no assumptions about the environment of pedestrian motion.
@@ -47,7 +49,11 @@ Sample dataset can be downloaded from [EWalk: Emotion Walk](http://gamma.cs.unc.
 
 ### Pretrained model
 
-VS-GCNN model trained on the above dataset can be downloaded from [google drive](https://drive.google.com/file/d/14SB-wNVW-2Wp9738UWbh_3K3mYO_tSsn/view?usp=sharing)
+VS-GCNN model trained on the above dataset can be loaded from [proxemo folder]/emotion_classification/trained_models
+
+### Augmenting the dataset for different views
+
+Run `[proxemo folder]/emotion_classification/utils/gataGenerator.py` to augment original dataset to different view angles. Check the source and destination folder paths in main loop and run the python script. The default settings will generate augmented data for 4 view angles.
 
 ### Config file changes
 
@@ -55,22 +61,22 @@ Below are the basic changes to be made in config file. Open config file from `[p
 
 1. Set the mode
 
-```bash
+```yaml
 GENERAL : MODE : ['train' | 'test' ]
 ```
 
 2. Specify pretrained model path if running in *inferece* or *test* mode or warm starting the training 
 
-```bash
+```yaml
 MODEL : PRETRAIN_PATH : <path to model dir>
 MODEL : PRETRAIN_NAME : <model file name>
 ```
 
 3. Specify features and labels H5 files.
 
-```bash
-DATA : FEATURES_FILE : <path to features file>
-DATA : LABELS_FILE : <path to lables file>
+```yaml
+DATA : FEATURES_FILE : <path to augmented features file>
+DATA : LABELS_FILE : <path to augmented lables file>
 ```
 
 ## Running the code
@@ -146,13 +152,14 @@ Confusion Matrix
 
 ## Cite this paper
 
-```bash
-@article{narayanan2020proxemo,
-  title={ProxEmo: Gait-based Emotion Learning and Multi-view Proxemic Fusion for Socially-Aware Robot Navigation},
+```text
+@INPROCEEDINGS{narayanan2020proxemo,
   author={Narayanan, Venkatraman and Manoghar, Bala Murali and Dorbala, Vishnu Sashank and Manocha, Dinesh and Bera, Aniket},
-  journal={arXiv preprint arXiv:2003.01062},
-  year={2020}
-}
+  title={ProxEmo: Gait-based Emotion Learning and Multi-view Proxemic Fusion for Socially-Aware Robot Navigation},
+  booktitle={2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  year={2020},
+  volume={},
+  number={}}
 ```
 
 ## Contact authors

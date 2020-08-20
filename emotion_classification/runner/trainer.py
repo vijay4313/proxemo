@@ -76,13 +76,6 @@ class Trainer(object):
         self.TERMINAL_LOG = self.args['TERMINAL_LOG']
         self.create_working_dir(self.args['WORK_DIR'])
         self.create_working_dir(self.args['RESULT_SAVE_DIR'])
-        self.model_config['PRETRAIN_PATH'] = self.args['WORK_DIR']
-
-        all_args = {'GENERAL': self.args,
-                    'MODEL': self.model_config, 'DATA': self.data_config}
-
-        with open(os.path.join(self.args['WORK_DIR'], 'settings.yaml'), 'w') as file:
-            yaml.dump(all_args, file)
 
         # Data loader
         if self.args['MODE'] == 'train':
@@ -106,6 +99,15 @@ class Trainer(object):
                 self.num_classes * self.model_config['NUM_GROUPS'])
         else:
             self.summary_statistics = SummaryStatistics(self.num_classes)
+        
+        # Save Config File    
+        self.model_config['PRETRAIN_PATH'] = self.args['WORK_DIR']
+
+        all_args = {'GENERAL': self.args,
+                    'MODEL': self.model_config, 'DATA': self.data_config}
+
+        with open(os.path.join(self.args['WORK_DIR'], 'settings.yaml'), 'w') as file:
+            yaml.dump(all_args, file)
 
     def create_working_dir(self, dir_name):
         """Create folder under given path.

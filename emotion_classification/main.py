@@ -47,7 +47,7 @@ def main():
     if gen_args['MODE'] == 'train':
         model.train()
 
-    elif args['MODE'] == 'test':
+    elif gen_args['MODE'] == 'test':
         model.test()
 
 

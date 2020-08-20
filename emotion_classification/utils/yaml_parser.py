@@ -13,17 +13,20 @@ import shutil
 import sys
 
 
-def yaml_parser(file_name, config_base_path='../runner/config'):
+def yaml_parser(file_name, config_base_path='../modeling/config'):
     """YAML file parser.
 
     Args:
         file_name (str): YAML file to be loaded
         config_base_path (str, optional): Directory path of file.
-                                          Defaults to '../runner/config'.
+                                          Defaults to '../modeling/config'.
 
     Returns:
         [dict]: Parsed YAML file as dictionary
     """
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    config_base_path = os.path.normpath(os.path.join(cur_dir, config_base_path))
+
     file_path = os.path.join(config_base_path,
                              file_name + '.yaml')
     with open(file_path, 'r') as yaml_file:
@@ -31,14 +34,17 @@ def yaml_parser(file_name, config_base_path='../runner/config'):
     return yaml_dict
 
 
-def copy_yaml(file_name, dest_folder, config_base_path='../runner/config'):
+def copy_yaml(file_name, dest_folder, config_base_path='../modeling/config'):
     """Copies YAML file from one folder to another.
 
     Args:
         file_name (str): source file path
         dest_folder (str): destination path
-        config_base_path (str, optional): Source file path. Defaults to '../runner/config'.
+        config_base_path (str, optional): Source file path. Defaults to '../modeling/config'.
     """
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    config_base_path = os.path.normpath(os.path.join(cur_dir, config_base_path))
+
     file_path = os.path.join(config_base_path,
                              file_name + '.yaml')
     try:
@@ -50,5 +56,5 @@ def copy_yaml(file_name, dest_folder, config_base_path='../runner/config'):
 
 
 if __name__ == '__main__':
-    yaml_dict = yaml_parser('stgcn')
+    yaml_dict = yaml_parser('train')
     print(yaml_dict)

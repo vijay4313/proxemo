@@ -60,6 +60,11 @@ def generateDataSet(_path, _ftype, _dpath, coords, joints, cycles=3, angles=0, t
         trans (int/list, optional): Transition matrix to be applied for reference change.
                                Defaults to 0.
     """
+    # Resolving according to current file's parent directory
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    _path = os.path.normpath(os.path.join(cur_dir, _path))
+    _dpath = os.path.normpath(os.path.join(cur_dir, _dpath))
+
     file_feature = os.path.join(_path, 'features' + _ftype + '.h5')
     ff = h5py.File(file_feature, 'r')
     file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
@@ -90,8 +95,8 @@ def generateDataSet(_path, _ftype, _dpath, coords, joints, cycles=3, angles=0, t
 
 if __name__ == "__main__":
     #    pts, label = readDataSingleGait("../data", "", 3, 16, 1)
-    angles = [33, 66, 123, 156, 213, 246, 303, 336]
-    generateDataSet("../data",
-                    "_ELMD",
-                    "../data/AugDataset_test-custom_ELMD_150_cm",
+    angles = [30, 110, 200, 300]
+    generateDataSet("../sample_data",
+                    "",
+                    "../sample_data/AugData_150_cm",
                     3, 16, 1, angles, 150)

@@ -7,8 +7,8 @@ GENERAL:
   START_EPOCH: 0
   LOG_INTERVAL: 100
   CUDA_DEVICE: 0 #'cuda0'
-  BATCH_SIZE: 32
-  NUM_WORKERS: 2
+  BATCH_SIZE: 16
+  NUM_WORKERS: 1
   SNAPSHOT_INTERVAL: 5
   SAVE_FEATURES: True
   TOPK: [1]
@@ -40,5 +40,5 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: 'sample_data/sample_features.h5'
-  LABELS_FILE: 'sample_data/sample_lables.h5'
+  FEATURES_FILE: '/home/bala/bala/proxemo/emotion_classification/sample_data/AugData_150_cm/features_*.h5'
+  LABELS_FILE: '/home/bala/bala/proxemo/emotion_classification/sample_data/AugData_150_cm/labels_*.h5'

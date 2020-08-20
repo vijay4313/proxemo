@@ -1,13 +1,13 @@
 # General parameters
 GENERAL:
-  MODE: 'inference' # train|test|inference
+  MODE: 'test' # train|test|inference
   OUTPUT_PATH: '../output_test'
   EPOCHS: 2000
   START_EPOCH: 0
   LOG_INTERVAL: 100
   CUDA_DEVICE: 0 #'cuda0'
-  BATCH_SIZE: 32
-  NUM_WORKERS: 2
+  BATCH_SIZE: 16
+  NUM_WORKERS: 1
   SNAPSHOT_INTERVAL: 5
   SAVE_FEATURES: True
   TOPK: [1]
@@ -29,8 +29,8 @@ MODEL:
   LOSS: 'cross_entropy'
   TARGETS: ['emotion_classes', 'groups']
   LAYER_CHANNELS: [32, 64, 16]
-  PRETRAIN_PATH: '/scratch/emotiongroup/Training Runs IROS/Run 6/saved_models/vs_gcnn/29-02-2020-01-13-54'
-  PRETRAIN_NAME: 'mdl_epoch16_acc81.89_model.pth.tar'
+  PRETRAIN_PATH: '/home/bala/bala/proxemo/emotion_classification/sample_data'
+  PRETRAIN_NAME: 'mdl_epoch134_acc86.92_model.pth.tar'
 
 # Data params
 DATA:
@@ -40,5 +40,5 @@ DATA:
   COORDS: 3 # in channels
   JOINTS: 16
   CYCLES: 1
-  FEATURES_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/features_*.h5'
-  LABELS_FILE: '/scratch/emotiongroup/data/AugDataset_test-custom_*_450_cm/labels_*.h5'
+  FEATURES_FILE: '/home/bala/bala/proxemo/emotion_classification/sample_data/AugData_150_cm/features_*.h5'
+  LABELS_FILE: '/home/bala/bala/proxemo/emotion_classification/sample_data/AugData_150_cm/labels_*.h5'
