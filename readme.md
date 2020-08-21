@@ -45,15 +45,15 @@ To run the demo with intel realsense D435 camera following libraries are require
 
 ### Dataset
 
-Sample dataset can be downloaded from [EWalk: Emotion Walk](http://gamma.cs.unc.edu/GAIT/#EWalk). Sample H5 files can be found in [GitHub](https://github.com/vijay4313/proxemo/tree/master/emotion_classification/sample_data). For full dataset, please contact the authors.
+Sample dataset can be downloaded from [EWalk: Emotion Walk](http://gamma.cs.unc.edu/GAIT/#EWalk). Sample H5 files can be found in [GitHub](https://github.com/vijay4313/proxemo/tree/master/emotion_classification/sample_data) under `[proxemo folder]/emotion_classification/sample_data`. For full dataset, please contact the authors.
 
 ### Pretrained model
 
-VS-GCNN model trained on the above dataset can be loaded from [proxemo folder]/emotion_classification/trained_models
+VS-GCNN model trained on the above dataset can be loaded from [trained_models](https://github.com/vijay4313/proxemo/tree/master/emotion_classification/trained_models) folder - `[proxemo folder]/emotion_classification/trained_models`
 
 ### Augmenting the dataset for different views
 
-Run `[proxemo folder]/emotion_classification/utils/gataGenerator.py` to augment original dataset to different view angles. Check the source and destination folder paths in main loop and run the python script. The default settings will generate augmented data for 4 view angles.
+Run `[proxemo folder]/emotion_classification/utils/dataGenerator.py` to augment original dataset to different view angles. Check the source and destination folder paths in main loop and run the python script. The default settings will generate augmented data for 4 view angles.
 
 ### Config file changes
 
